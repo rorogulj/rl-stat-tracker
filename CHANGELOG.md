@@ -4,6 +4,10 @@ All notable changes to RL Stat Tracker. Versions follow `0.x` while the app is
 in active development; each release is tagged (`v0.1.0`) and picked up by
 installed copies through the in-app update button.
 
+## 0.2.2 — 2026-07-26
+
+- New logo: browser favicon, top bar, welcome page and README.
+
 ## 0.2.1 — 2026-07-26
 
 - Server page: benchmark re-analysis progress is now a visible row with its own

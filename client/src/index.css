@@ -165,13 +165,9 @@ body::after {
 .logo {
   font-family: var(--font-display); font-weight: 400; font-size: 17px;
   text-transform: uppercase; letter-spacing: 0.04em;
-  display: flex; align-items: center; gap: 10px; white-space: nowrap; color: var(--text);
+  display: flex; align-items: center; gap: 9px; white-space: nowrap; color: var(--text);
 }
-.logo::before {
-  content: ''; width: 9px; height: 9px; border-radius: 2px;
-  background: var(--neon);
-  box-shadow: 0 0 10px rgba(111, 255, 0, 0.55);
-}
+.logo-img { width: 26px; height: 26px; filter: drop-shadow(0 0 8px rgba(111, 255, 0, 0.35)); }
 
 .nav { display: flex; gap: 6px; flex: 1; }
 .nav a {
@@ -1366,3 +1362,5 @@ table.cmp.opp-table { width: 100%; }
   font-family: var(--font); font-size: inherit; color: var(--neon); text-decoration: underline;
 }
 .linklike:disabled { color: var(--muted); cursor: default; }
+
+.w-logo { width: 62px; height: 62px; margin-bottom: 14px; filter: drop-shadow(0 0 14px rgba(111, 255, 0, 0.3)); }

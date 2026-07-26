@@ -145,7 +145,10 @@ export default function App() {
   return (
     <div className="shell">
       <header className="topbar">
-        <NavLink to="/" className="logo">RL Stat Tracker</NavLink>
+        <NavLink to="/" className="logo">
+          <img src="/logo-icon-transparent.svg" alt="" className="logo-img" />
+          RL Stat Tracker
+        </NavLink>
         <nav className="nav">
           <NavLink to="/" end>Profile</NavLink>
           <NavLink to="/matches">Matches</NavLink>

@@ -48,6 +48,7 @@ export default function Welcome({ onUp }) {
   return (
     <div className="welcome">
       <div className="card welcome-card">
+        <img src="/logo-icon-transparent.svg" alt="" className="w-logo" />
         <div className="w-kicker">RL Stat Tracker</div>
         <h1 className="w-title">
           Football-style stats<br />for your Rocket League

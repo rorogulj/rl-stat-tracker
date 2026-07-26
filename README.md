@@ -1,4 +1,6 @@
-# 🚀 RL Stat Tracker
+<p align="center">
+  <img src="client/public/logo-horizontal.svg" width="520" alt="RL Stat Tracker" />
+</p>
 
 **A personal hobby project** — free, open source and not for sale. I built this because
 I wanted football-style deep stats for my own Rocket League matches: the kind of
