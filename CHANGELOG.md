@@ -4,6 +4,13 @@ All notable changes to RL Stat Tracker. Versions follow `0.x` while the app is
 in active development; each release is tagged (`v0.1.0`) and picked up by
 installed copies through the in-app update button.
 
+## 0.3.6 — 2026-07-26
+
+- The public site has a **live demo**: a "Try the demo" button loads the full
+  app with a fictional player (DEMO_PLAYER) built from anonymized real matches
+  — every other player's name and id is replaced, platform ids stripped, and
+  the generator refuses to publish if any real identity survives its checks.
+
 ## 0.3.5 — 2026-07-26
 
 - The Info page is now a full encyclopedia article: numbered sections with the

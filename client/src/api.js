@@ -1,4 +1,16 @@
+// demo mode: the public site serves anonymized JSON snapshots instead of the API
+export const isDemo = () => { try { return localStorage.getItem('rl_demo') === '1'; } catch { return false; } };
+export const enterDemo = () => { try { localStorage.setItem('rl_demo', '1'); } catch { /* ignore */ } window.location.href = '/'; };
+export const exitDemo = () => { try { localStorage.removeItem('rl_demo'); } catch { /* ignore */ } window.location.href = '/'; };
+const demoSlug = (url) => '/demo/' + url.replace(/^\/api\//, '').replace(/[/?&=]/g, '_') + '.json';
+
 async function j(url, opts) {
+  if (isDemo()) {
+    if (opts?.method && opts.method !== 'GET') return { demo: true }; // writes are no-ops
+    const r = await fetch(demoSlug(url));
+    if (!r.ok) throw new Error('not in demo dataset');
+    return r.json();
+  }
   const r = await fetch(url, opts);
   if (!r.ok) throw new Error('API ' + r.status);
   return r.json();

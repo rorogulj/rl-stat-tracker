@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { flushSync } from 'react-dom';
 import { Routes, Route, NavLink, useLocation } from 'react-router-dom';
-import { api } from './api.js';
+import { api, isDemo, exitDemo } from './api.js';
 import { useParams } from 'react-router-dom';
 import Dashboard from './pages/Dashboard.jsx';
 import Matches from './pages/Matches.jsx';
@@ -127,10 +127,12 @@ export default function App() {
     poll();
   };
 
+  const demo = isDemo();
+
   // update check: once at load (server caches the GitHub lookup for 6 h)
   const [upd, setUpd] = useState(null);
   const [updating, setUpdating] = useState(false);
-  useEffect(() => { api.update().then(setUpd).catch(() => {}); }, []);
+  useEffect(() => { if (!demo) api.update().then(setUpd).catch(() => {}); }, [demo]);
   const doUpdate = async () => {
     if (upd?.dev) {
       window.alert('This copy is a git checkout — update it with git pull.');
@@ -144,6 +146,13 @@ export default function App() {
 
   return (
     <div className="shell">
+      {demo && (
+        <div className="demo-banner">
+          <b>DEMO</b> — a fictional player (DEMO_PLAYER) with anonymized real matches.
+          Install the tracker to see your own games.
+          <button className="linklike" onClick={exitDemo}>Exit demo</button>
+        </div>
+      )}
       <header className="topbar">
         <NavLink to="/" className="logo">
           <img src="/logo-icon-transparent.svg" alt="" className="logo-img" />
@@ -166,10 +175,12 @@ export default function App() {
             ↑ v{upd.latest}
           </button>
         )}
-        <button className="icon-btn" onClick={() => setShowSettings(true)} title="Settings">⚙</button>
-        <button className="sync-btn" onClick={doSync} disabled={prog?.running}>
-          {prog?.running ? `Importing ${prog.done}/${prog.total}…` : 'Sync'}
-        </button>
+        {!demo && <button className="icon-btn" onClick={() => setShowSettings(true)} title="Settings">⚙</button>}
+        {!demo && (
+          <button className="sync-btn" onClick={doSync} disabled={prog?.running}>
+            {prog?.running ? `Importing ${prog.done}/${prog.total}…` : 'Sync'}
+          </button>
+        )}
       </header>
 
       {updating && <UpdateOverlay target={upd?.latest} />}

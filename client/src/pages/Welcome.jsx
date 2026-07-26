@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Scribble from '../components/Scribble.jsx';
+import { enterDemo } from '../api.js';
 
 const REPO = 'https://github.com/rorogulj/rl-stat-tracker';
 const INSTALL_CMD = `irm ${REPO.replace('github.com', 'raw.githubusercontent.com')}/main/install.ps1 | iex`;
@@ -105,7 +106,8 @@ export default function Welcome({ onUp }) {
         </div>
 
         <div className="w-cta">
-          <a className="w-btn primary" href={REPO} target="_blank" rel="noreferrer">GitHub ↗</a>
+          {isRemote && <button className="w-btn primary" onClick={enterDemo}>Try the demo</button>}
+          <a className={`w-btn${isRemote ? '' : ' primary'}`} href={REPO} target="_blank" rel="noreferrer">GitHub ↗</a>
           <button className="w-btn" onClick={ping}>Retry now</button>
         </div>
 

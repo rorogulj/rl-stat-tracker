@@ -6,11 +6,13 @@ import '@fontsource/condiment';
 import './index.css';
 import App from './App.jsx';
 import Welcome from './pages/Welcome.jsx';
+import { isDemo } from './api.js';
 
 /** Mount the app only when a local server answers; otherwise show the landing. */
 function Boot() {
-  const [state, setState] = useState('checking'); // checking | up | down
+  const [state, setState] = useState(isDemo() ? 'up' : 'checking'); // demo mounts straight away
   useEffect(() => {
+    if (isDemo()) return undefined;
     let alive = true;
     fetch('/api/status')
       .then((r) => (r.ok ? r.json() : Promise.reject()))
