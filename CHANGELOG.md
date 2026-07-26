@@ -4,6 +4,31 @@ All notable changes to RL Stat Tracker. Versions follow `0.x` while the app is
 in active development; each release is tagged (`v0.1.0`) and picked up by
 installed copies through the in-app update button.
 
+## 0.3.1 — 2026-07-26
+
+Install reliability + analyzer follow-up fixes (from the second independent review).
+
+- **Installer**: works for Windows user names with non-ASCII characters (č/š/é —
+  the launcher was written as ASCII and silently broke); verifies that the system
+  Node actually has `node:sqlite` instead of trusting the version number; refuses
+  to touch port 7845 when a foreign application holds it (and the server itself
+  now reports that clearly instead of quietly exiting).
+- **Replay folder detection** follows the real Documents location (OneDrive
+  redirection — the default on most consumer Windows installs). If the folder
+  still isn't found, the app shows a banner explaining what to do instead of a
+  green "watching" state over a non-existent path.
+- **Import errors are visible**: a banner appears when replays fail to import
+  (typical cause: antivirus quarantining the parser) and the server page lists
+  the errors.
+- **xG dedup fix**: merged shot sequences kept a stale array position, which
+  could feed the rebound bonus from a later shot and mislink goals; sequences
+  are also anchored to their first touch so a long dribble can't chain-merge
+  a real rebound. Replays re-analyze automatically.
+- **Overtime detection** now reads the replay's own overtime flag (buzzer-beater
+  goals in regulation no longer count as OT).
+- Match "why X won" factors use the server's team xG (own goals no longer
+  inflate "clinical finishing").
+
 ## 0.3.0 — 2026-07-26
 
 Branding release.

@@ -145,6 +145,14 @@ export default function ServerStatus() {
               <span className="slbl">{l}</span><span className="sval srv-val">{v}</span>
             </div>
           ))}
+          {s.import.progress.errors?.length > 0 && (
+            <div className="srow" style={{ gridTemplateColumns: '150px 1fr' }}>
+              <span className="slbl" style={{ color: 'var(--red)' }}>Errors</span>
+              <span className="sval srv-val" style={{ color: 'var(--red)' }}>
+                {s.import.progress.errors.length}× — latest: {s.import.progress.errors.at(-1).file} ({s.import.progress.errors.at(-1).error})
+              </span>
+            </div>
+          )}
           <div className="footnote">New replays are picked up automatically seconds after you save them in game</div>
         </div>
 

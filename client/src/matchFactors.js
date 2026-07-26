@@ -21,7 +21,12 @@ export function matchFactors(m) {
   };
 
   // --- finishing: goals vs xG (who was clinical, who wasteful) ---
-  const xg = [sum(0, (p) => p.xg?.total), sum(1, (p) => p.xg?.total)];
+  // meta.teamXg is the server's authoritative team xG (aggregated from shots — handles
+  // own goals and unattributed chances); summing player totals is only the fallback
+  const metaXg = m.meta?.teamXg;
+  const xg = metaXg && metaXg[0] != null && metaXg[1] != null
+    ? [metaXg[0], metaXg[1]]
+    : [sum(0, (p) => p.xg?.total), sum(1, (p) => p.xg?.total)];
   const fin = [score[0] - xg[0], score[1] - xg[1]];
   const finDiff = fin[0] - fin[1];
   if (Math.abs(finDiff) > 0.6) {

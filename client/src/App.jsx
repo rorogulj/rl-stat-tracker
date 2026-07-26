@@ -187,6 +187,22 @@ export default function App() {
         </div>
       )}
 
+      {status?.replayDirExists === false && (
+        <div className="warn-banner">
+          <b>Replay folder not found:</b> <code>{status.replayDir}</code> — if your Documents
+          folder lives in OneDrive or elsewhere, set the <code>RL_REPLAY_DIR</code> environment
+          variable to your replay folder. Also make sure Rocket League saves replays
+          (Settings → Replays → autosave).
+        </div>
+      )}
+      {status && status.matches === 0 && (status.progress?.errors?.length > 0) && (
+        <div className="warn-banner bad">
+          <b>Replays are failing to import</b> ({status.progress.errors.length} errors) — open{' '}
+          <a href="/server">localhost:7845/server</a> for details. An antivirus quarantining
+          the replay parser (rrrocket.exe) is the usual cause.
+        </div>
+      )}
+
       {/* progress bar on route change (like Safari/YouTube) */}
       <div className="route-progress" key={'rp' + displayLocation.pathname} />
 

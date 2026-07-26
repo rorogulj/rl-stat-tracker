@@ -45,6 +45,12 @@ function Test-Port {
   try { (Invoke-WebRequest "http://localhost:$Port/api/status" -UseBasicParsing -TimeoutSec 2) | Out-Null; $true }
   catch { $false }
 }
+$portBusy = $null -ne (Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue)
+if ($portBusy -and -not (Test-Port)) {
+  # something is listening on 7845 but it does not answer like the tracker —
+  # never kill a foreign application, and the server could not start anyway
+  throw "Port $Port is in use by another application. Close it and run the installer again."
+}
 if (Test-Port) {
   if ($FromUpdate) {
     Say 'waiting for the server to shut down...'
@@ -64,9 +70,14 @@ if (Test-Port) {
 $NodeExe = Join-Path $NodeDir 'node.exe'
 if (-not (Test-Path $NodeExe)) {
   $sysNode = Get-Command node -ErrorAction SilentlyContinue
-  $major = 0
-  if ($sysNode) { try { $major = [int]((& node -v) -replace '^v(\d+).*', '$1') } catch { $major = 0 } }
-  if ($major -ge 22) {
+  # the version number is not enough: node:sqlite ships unflagged only in newer 22.x —
+  # actually try to load it, and fall back to the portable runtime if that fails
+  $nodeOk = $false
+  if ($sysNode) {
+    cmd /c "node -e `"require('node:sqlite')`" > nul 2>&1"
+    if ($LASTEXITCODE -eq 0) { $nodeOk = $true }
+  }
+  if ($nodeOk) {
     $NodeExe = $sysNode.Source
     $NodeDir = Split-Path $NodeExe
     Say "using system Node $(& node -v)"
@@ -155,7 +166,7 @@ If WScript.Arguments.Count > 0 Then
   WScript.Sleep 1500
   sh.Run "http://localhost:$Port"
 End If
-"@ | Out-File -Encoding ascii $Launcher
+"@ | Out-File -Encoding unicode $Launcher # UTF-16: paths may contain non-ASCII user names (č, š, é...)
 
 $wsh = New-Object -ComObject WScript.Shell
 if (-not $NoShortcuts) {

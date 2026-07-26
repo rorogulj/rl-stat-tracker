@@ -16,7 +16,7 @@ const HEIGHT = { GROUND: 120, HIGH_AIR: 840 };
 const TOUCH = { DV: 500, RADIUS: 360, COOLDOWN: 0.35 };
 const GOAL = { HALF_W: 893, HEIGHT: 642, Y: 5120, GRAVITY: 650 };
 const CHALLENGE_WINDOW = 1.5; // s — quick alternating touches = 50/50 duel
-const ANALYZER_VERSION = 15;
+const ANALYZER_VERSION = 16;
 
 // the six 100-boost pad locations (standard soccar maps)
 const BIG_PADS = [[3072, 4096], [-3072, 4096], [3072, -4096], [-3072, -4096], [3584, 0], [-3584, 0]];
@@ -143,6 +143,7 @@ function analyze(data, fileName) {
   const players = new Map();
 
   let gameState = 'WaitingForPlayers';
+  let sawOvertime = false; // authoritative bOverTime attribute from the replay
   let ball = { pos: { x: 0, y: 0, z: 93 }, vel: { x: 0, y: 0, z: 0 } };
   const ballHeatmap = newHeatmap();
 
@@ -259,6 +260,10 @@ function analyze(data, fileName) {
           const s = names[a.Int];
           if (s) gameState = s;
           if (s === 'Countdown') kickoffPending = true;
+          break;
+        }
+        case 'TAGame.GameEvent_Soccar_TA:bOverTime': {
+          if (a.Boolean) sawOvertime = true;
           break;
         }
         case 'Engine.PlayerReplicationInfo:PlayerName': {
@@ -717,20 +722,23 @@ function analyze(data, fileName) {
   });
 
   // dedup: consecutive touches by the SAME player within one attacking sequence are
-  // one chance, not many shots — keep a single record (latest position, best raw xG)
+  // one chance, not many shots — keep a single record (latest position, best raw xG).
+  // The window is anchored to the sequence START (a rolling window would chain-merge
+  // an entire dribble including real rebounds), and the array is re-sorted afterwards
+  // because merged records carry the latest time (rebound + goal linking assume order).
   {
     const deduped = [];
-    const lastByKey = new Map(); // player key -> index into deduped
+    const lastByKey = new Map(); // player key -> { idx, startT }
     for (const sh of shots) {
-      const prevIdx = lastByKey.get(sh.key);
-      const prev = prevIdx != null ? deduped[prevIdx] : null;
-      if (prev && sh.t - prev.t < 2.5) {
-        deduped[prevIdx] = { ...sh, xg: Math.max(prev.xg, sh.xg) };
+      const prev = lastByKey.get(sh.key);
+      if (prev && sh.t - prev.startT < 2.5) {
+        deduped[prev.idx] = { ...sh, xg: Math.max(deduped[prev.idx].xg, sh.xg) };
       } else {
-        lastByKey.set(sh.key, deduped.length);
+        lastByKey.set(sh.key, { idx: deduped.length, startT: sh.t });
         deduped.push(sh);
       }
     }
+    deduped.sort((a, b) => a.t - b.t);
     shots.length = 0;
     shots.push(...deduped);
   }
@@ -952,8 +960,9 @@ function analyze(data, fileName) {
   const dateIso = dateRaw.replace(/^(\d{4}-\d{2}-\d{2}) (\d{2})-(\d{2})-(\d{2})$/, '$1T$2:$3:$4');
 
   const t0 = P('Team0Score') || 0, t1 = P('Team1Score') || 0;
-  // overtime = a goal past regulation on the ACTIVE clock (raw replay time includes
-  // kickoff countdowns and celebrations, which used to flag late regulation goals as OT)
+  // overtime: the replay's own bOverTime attribute is authoritative; the active-clock
+  // fallback uses 305 s (not 300) because a buzzer-beater in regulation can let the
+  // active clock run a few seconds past 300 while the ball is in flight
   const lastGoalActive = goals.length ? Math.max(...goals.map((g) => g.timeActive ?? g.time)) : 0;
 
   return {
@@ -967,7 +976,7 @@ function analyze(data, fileName) {
     date: dateIso,
     duration: r1(activeTime),
     totalSeconds: P('TotalSecondsPlayed') || 0,
-    overtime: lastGoalActive > 300.5 || (P('TotalSecondsPlayed') || 0) > 315,
+    overtime: sawOvertime || lastGoalActive > 305 || (P('TotalSecondsPlayed') || 0) > 315,
     team0Score: t0, team1Score: t1,
     goals,
     demoEvents,

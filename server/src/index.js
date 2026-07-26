@@ -42,6 +42,7 @@ app.get('/api/status', (req, res) => {
     version: require('./update').VERSION,
     dev: require('./update').isDevCheckout,
     replayDir: importer.REPLAY_DIR,
+    replayDirExists: fs.existsSync(importer.REPLAY_DIR),
     pending: importer.pendingFiles().length,
     progress: importer.progress,
     matches: stmts.listMatches.all().length,
@@ -558,8 +559,22 @@ srv.on('error', (e) => {
       setTimeout(() => srv.listen(PORT, '127.0.0.1'), 500);
       return;
     }
-    console.log('Server already running on port ' + PORT + ' — exiting.');
-    process.exit(0);
+    // check WHO holds the port: a second copy of the tracker is fine (exit quietly),
+    // but a foreign application must not be mistaken for one
+    fetch(`http://localhost:${PORT}/api/status`, { signal: AbortSignal.timeout(3000) })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((s) => {
+        if (s && s.version != null && s.replayDir != null) {
+          console.log('Server already running on port ' + PORT + ' — exiting.');
+          process.exit(0);
+        }
+        throw new Error('not ours');
+      })
+      .catch(() => {
+        console.log('Port ' + PORT + ' is in use by ANOTHER application — close it and start the tracker again.');
+        process.exit(1);
+      });
+    return;
   }
   throw e;
 });
