@@ -4,6 +4,12 @@ All notable changes to RL Stat Tracker. Versions follow `0.x` while the app is
 in active development; each release is tagged (`v0.1.0`) and picked up by
 installed copies through the in-app update button.
 
+## 0.1.2 — 2026-07-26
+
+- Server tab now shows an **Updates** row — current version, up-to-date state and
+  a manual "Check now" — so the update mechanism is visible even when there is
+  nothing new.
+
 ## 0.1.1 — 2026-07-26
 
 Transparency release — no binaries in the repo, auditable updates.

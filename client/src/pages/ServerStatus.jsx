@@ -11,6 +11,39 @@ const fmtUptime = (s) => {
 };
 const fmtTime = (t) => new Date(t).toLocaleTimeString('en-GB');
 
+/** "Updates" row: current state + a manual "Check now" (bypasses the 6 h cache). */
+function UpdateRow() {
+  const [upd, setUpd] = useState(null);
+  const [checking, setChecking] = useState(false);
+  useEffect(() => { api.update().then(setUpd).catch(() => {}); }, []);
+  const checkNow = async () => {
+    setChecking(true);
+    try { setUpd(await api.update(true)); } catch { /* offline */ }
+    setChecking(false);
+  };
+  let text = 'checking…';
+  if (upd) {
+    if (upd.disabled) text = 'checks disabled (RL_NO_UPDATE_CHECK)';
+    else if (upd.available) text = `v${upd.latest} available — use the ↑ button in the top bar`;
+    else if (upd.dev) text = `up to date (v${upd.current}, git checkout — update via git pull)`;
+    else if (upd.latest) text = `up to date (v${upd.current})`;
+    else text = `v${upd.current} — could not reach GitHub to compare`;
+  }
+  return (
+    <div className="srow" style={{ gridTemplateColumns: '110px 1fr' }}>
+      <span className="slbl">Updates</span>
+      <span className="sval srv-val">
+        {text}
+        {!upd?.disabled && (
+          <button className="linklike" onClick={checkNow} disabled={checking}>
+            {checking ? 'checking…' : 'Check now'}
+          </button>
+        )}
+      </span>
+    </div>
+  );
+}
+
 export default function ServerStatus() {
   const [s, setS] = useState(null);
   const [err, setErr] = useState(false);
@@ -62,6 +95,7 @@ export default function ServerStatus() {
               <span className="slbl">{l}</span><span className="sval srv-val">{v}</span>
             </div>
           ))}
+          <UpdateRow />
           <div className="footnote">Auto-starts hidden at every Windows login (start-server.vbs in Startup)</div>
         </div>
 

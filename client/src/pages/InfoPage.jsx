@@ -124,7 +124,7 @@ const CONCEPTS = [
   },
   {
     term: 'Updates (↑ button)', cat: 'App',
-    body: 'The server compares its version against GitHub once per session (6 h cache). When a newer version exists, an ↑ vX.Y.Z button appears in the top bar: one click re-runs the installer, the server replaces itself and restarts, and the page reloads on its own. Your database is untouched (it lives outside the app folder). Git checkouts update via git pull instead. Re-running the install command does the same thing manually.',
+    body: 'The server compares its version against GitHub once per session (6 h cache). When a newer version exists, an ↑ vX.Y.Z button appears in the top bar: one click re-runs the installer, the server replaces itself and restarts, and the page reloads on its own. Updates install the tagged release snapshot, never the moving tip of the repo, and nothing ever installs without your click. Current state is always visible on the Server tab ("Updates" row, with a manual Check now). Your database is untouched (it lives outside the app folder). Git checkouts update via git pull instead; RL_NO_UPDATE_CHECK=1 disables checking entirely.',
   },
   {
     term: 'Published rank models', cat: 'App',

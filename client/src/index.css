@@ -1359,3 +1359,10 @@ table.cmp.opp-table { width: 100%; }
   animation: updspin 0.9s linear infinite;
 }
 @keyframes updspin { to { transform: rotate(360deg); } }
+
+/* small inline text-button (Server tab "Check now") */
+.linklike {
+  background: none; border: none; padding: 0; margin-left: 10px; cursor: pointer;
+  font-family: var(--font); font-size: inherit; color: var(--neon); text-decoration: underline;
+}
+.linklike:disabled { color: var(--muted); cursor: default; }
