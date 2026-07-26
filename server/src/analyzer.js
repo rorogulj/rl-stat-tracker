@@ -16,7 +16,7 @@ const HEIGHT = { GROUND: 120, HIGH_AIR: 840 };
 const TOUCH = { DV: 500, RADIUS: 360, COOLDOWN: 0.35 };
 const GOAL = { HALF_W: 893, HEIGHT: 642, Y: 5120, GRAVITY: 650 };
 const CHALLENGE_WINDOW = 1.5; // s — quick alternating touches = 50/50 duel
-const ANALYZER_VERSION = 16;
+const ANALYZER_VERSION = 17;
 
 // the six 100-boost pad locations (standard soccar maps)
 const BIG_PADS = [[3072, 4096], [-3072, 4096], [3072, -4096], [-3072, -4096], [3584, 0], [-3584, 0]];
@@ -732,7 +732,10 @@ function analyze(data, fileName) {
     for (const sh of shots) {
       const prev = lastByKey.get(sh.key);
       if (prev && sh.t - prev.startT < 2.5) {
-        deduped[prev.idx] = { ...sh, xg: Math.max(deduped[prev.idx].xg, sh.xg) };
+        // keep the WHOLE record of the best touch — mixing the best xG with the
+        // last touch's time/position made shot-map dots lie and could hand the
+        // rebound bonus to a shot that actually came first
+        if (sh.xg > deduped[prev.idx].xg) deduped[prev.idx] = { ...sh };
       } else {
         lastByKey.set(sh.key, { idx: deduped.length, startT: sh.t });
         deduped.push(sh);
@@ -755,17 +758,22 @@ function analyze(data, fileName) {
     }
   }
 
-  // calibrate every detected shot exactly once
-  for (const sh of shots) sh.xg = r2(calibrateXg(sh.xg));
+  // calibrate every detected shot exactly once (raw kept for calibration refits)
+  for (const sh of shots) {
+    sh.xgRaw = r2(sh.xg);
+    sh.xg = r2(calibrateXg(sh.xg));
+  }
 
   // ---------- xG: link shots to goals ----------
   for (const g of goals) {
-    // last shot by the scorer's team within 4 s before the goal
+    // last shot by the scorer's team within the maximum allowed flight time before
+    // the goal — a narrower window than detectShot's 6 s used to leave slow rollers
+    // unmatched AND add a synthetic duplicate (double-counted xG)
     let matched = null;
     for (let i = shots.length - 1; i >= 0; i--) {
       const s = shots[i];
       if (s.goal || s.team !== g.team) continue;
-      if (s.t <= g.time + 0.3 && s.t >= g.time - 4) { matched = s; break; }
+      if (s.t <= g.time + 0.3 && s.t >= g.time - 6.3) { matched = s; break; }
     }
     if (matched) { matched.goal = true; }
     else {
@@ -782,7 +790,8 @@ function analyze(data, fileName) {
         t: g.time, key: scorer ? scorer.key : null, team: g.team,
         x: Math.round(sx), y: Math.round(sy),
         z: lastT ? Math.round(lastT.pos.z) : 93, speed: 0,
-        xg: r2(synthGoalXg(sx, sy, g.team)), goal: true, synth: true,
+        ...((raw) => ({ xg: r2(calibrateXg(raw)), xgRaw: r2(raw) }))(synthGoalXg(sx, sy, g.team)),
+        goal: true, synth: true,
       });
     }
   }
@@ -816,7 +825,7 @@ function analyze(data, fileName) {
         bigChancesScored: myShots.filter((sh) => sh.xg >= 0.4 && sh.goal).length,
         zicers: myShots.filter((sh) => sh.xg >= 0.6).length,
         zicersScored: myShots.filter((sh) => sh.xg >= 0.6 && sh.goal).length,
-        shots: myShots.map((sh) => ({ t: r1(sh.t), x: sh.x, y: sh.y, z: sh.z, xg: r2(sh.xg), goal: sh.goal, speed: Math.round(sh.speed) })),
+        shots: myShots.map((sh) => ({ t: r1(sh.t), x: sh.x, y: sh.y, z: sh.z, xg: r2(sh.xg), xgRaw: sh.xgRaw, goal: sh.goal, speed: Math.round(sh.speed) })),
       },
       core: {
         score: hs.score || 0, goals: goalsN, assists: hs.assists || 0,
@@ -1015,7 +1024,12 @@ function detectShot(pl, pos, vel, t, opps = []) {
   const tGoal = dy / vel.y;
   if (tGoal <= 0 || tGoal > (dist < 3000 ? 6 : 4.5)) return null;
   const xAtGoal = pos.x + vel.x * tGoal;
-  const zAtGoal = pos.z + vel.z * tGoal - 0.5 * GOAL.GRAVITY * tGoal * tGoal;
+  // a rolling ball is NOT a projectile: applying gravity to it "predicts" it falling
+  // through the floor, which silently rejected every ground shot longer than ~1400 uu
+  const rolling = pos.z < 150 && Math.abs(vel.z) < 200;
+  const zAtGoal = rolling
+    ? pos.z
+    : pos.z + vel.z * tGoal - 0.5 * GOAL.GRAVITY * tGoal * tGoal;
   if (Math.abs(xAtGoal) > GOAL.HALF_W + 90 || zAtGoal > GOAL.HEIGHT + 90 || zAtGoal < -60) return null;
 
   // base xG (RAW — Platt calibration happens later, after dedup + rebound adjustments)
@@ -1061,17 +1075,24 @@ function detectShot(pl, pos, vel, t, opps = []) {
  * instead of being squashed onto a hard floor/ceiling.
  */
 function calibrateXg(xg) {
+  // a=0.49, b=0.16 — logistic fit on 1385 deduplicated on-target shots with
+  // outcomes from the corrected (v17) pipeline: rollers detected, sequences merged,
+  // rebound pre-calibration. Σ(calibrated) = Σ(goals) on the fitting sample.
   const cl = Math.min(0.995, Math.max(0.005, xg));
-  return 1 / (1 + Math.exp(-(0.422 * Math.log(cl / (1 - cl)) + 0.367)));
+  return 1 / (1 + Math.exp(-(0.49 * Math.log(cl / (1 - cl)) + 0.16)));
 }
 
-/** xG for a synthetic goal (no detected shot): geometry of the scorer's last touch. */
+/**
+ * RAW xG for a synthetic goal (no detected shot): geometry of the scorer's last
+ * touch. Passed through calibrateXg like every detected shot — mixing a hand-tuned
+ * final scale with calibrated values in the same list broke comparability.
+ */
 function synthGoalXg(x, y, team) {
   const goalY = team === 0 ? GOAL.Y : -GOAL.Y;
   const dy = goalY - y;
   const dist = Math.hypot(x, dy);
   const theta = Math.abs(Math.atan2(2 * GOAL.HALF_W * Math.abs(dy), dy * dy + x * x - GOAL.HALF_W * GOAL.HALF_W));
-  return Math.max(0.25, Math.min(0.9, sigmoid(-1.1 + 4.4 * (theta / Math.PI) - 1.8 * (dist / 11000))));
+  return Math.max(0.05, Math.min(0.95, sigmoid(-1.1 + 4.4 * (theta / Math.PI) - 1.8 * (dist / 11000))));
 }
 
 /**

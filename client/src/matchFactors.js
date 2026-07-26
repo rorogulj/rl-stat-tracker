@@ -70,12 +70,15 @@ export function matchFactors(m) {
       `${tn(bad)} broke down defensively: ${bits.join(', ')}.`);
   }
 
-  // --- kickoffs (+ goals right after a kickoff) ---
+  // --- kickoffs (+ goals right after a kickoff) --- (active clock, same one-clock
+  // rule as the server: mixing stamped and unstamped goals gives negative gaps)
+  const allActive = goals.every((g) => g.timeActive != null);
   let koGoals = [0, 0];
   let prevEnd = 0;
   for (const g of goals) {
-    if (g.time - prevEnd <= 10) koGoals[g.team === 1 ? 1 : 0]++;
-    prevEnd = g.time + 3;
+    const gt = allActive ? g.timeActive : g.time;
+    if (gt - prevEnd <= 10) koGoals[g.team === 1 ? 1 : 0]++;
+    prevEnd = allActive ? gt : gt + 3;
   }
   if (koGoals[0] + koGoals[1] > 0 && koGoals[0] !== koGoals[1]) {
     const t = koGoals[0] > koGoals[1] ? 0 : 1;
@@ -140,7 +143,7 @@ export function matchFactors(m) {
   // --- overtime / clutch / comeback ---
   if (m.overtime && goals.length) {
     const last = goals[goals.length - 1];
-    add(30, winner, 'Won in overtime', `${last.player} scored the decider at ${fd(last.time)}.`);
+    add(30, winner, 'Won in overtime', `${last.player} scored the decider at ${fd(last.timeActive ?? last.time)}.`);
   }
   {
     const sc = [0, 0];

@@ -142,7 +142,13 @@ async function trainMode(mode) {
   // from players seen in more than one match, and identity leakage across the split
   // makes val MAE optimistic
   const trainPlayers = new Set(trainIdx.map((i) => rows[i].playerKey).filter(Boolean));
-  const valIdx = valIdx0.filter((i) => !rows[i].playerKey || !trainPlayers.has(rows[i].playerKey));
+  let valIdx = valIdx0.filter((i) => !rows[i].playerKey || !trainPlayers.has(rows[i].playerKey));
+  // with heavy player overlap the purge can empty the val set — an empty val makes
+  // early stopping meaningless and reports a fantasy "valMAE 0.00"
+  if (valIdx.length < 100) {
+    console.log(`[gbdt] mode ${mode}: player purge left only ${valIdx.length} val rows — falling back to the unpurged split`);
+    valIdx = valIdx0;
+  }
 
   // binning on the train split
   const edgesPerF = [];
@@ -331,8 +337,16 @@ function calibration(mode) {
       const my = pairs.reduce((s, p) => s + p[1], 0) / n;
       let cov = 0, varx = 0;
       for (const [px, py] of pairs) { cov += (px - mx) * (py - my); varx += (px - mx) ** 2; }
-      b = varx > 1e-6 ? Math.max(0.6, Math.min(1.6, cov / varx)) : 1;
-      a = my - b * mx;
+      // a slope needs real spread in the predictions: pairs clustered within half a
+      // tier pass a sum-based epsilon and produce absurd extrapolating slopes —
+      // require variance (varx/n) of at least (0.2 tier)², else offset-only
+      if (varx / n >= 0.04) {
+        b = Math.max(0.6, Math.min(1.6, cov / varx));
+        a = my - b * mx;
+      } else {
+        b = 1;
+        a = my - mx;
+      }
     } else if (n >= 3) {
       a = pairs.reduce((s, p) => s + (p[1] - p[0]), 0) / n; // offset only
       b = 1;

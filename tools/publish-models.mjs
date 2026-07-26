@@ -21,9 +21,10 @@ for (const mode of [1, 2, 3]) {
   const model = JSON.parse(fs.readFileSync(src, 'utf8'));
   fs.copyFileSync(src, path.join(DST, `gbdt-rank-${mode}.json`));
   manifest.models[mode] = {
-    trainedAt: model.trainedAt, valMAE: model.valMAE, nRows: model.nRows, trees: model.trees.length,
+    trainedAt: model.trainedAt, valMAE: model.valMAE, baseMAE: model.baseMAE ?? null,
+    nRows: model.nRows, trees: model.trees.length,
   };
-  console.log(`mode ${mode}: published (trained ${model.trainedAt}, val MAE ${model.valMAE}, ${model.nRows} rows)`);
+  console.log(`mode ${mode}: published (trained ${model.trainedAt}, val MAE ${model.valMAE} vs baseline ${model.baseMAE ?? '?'}, ${model.nRows} rows)`);
 }
 
 fs.writeFileSync(path.join(DST, 'manifest.json'), JSON.stringify(manifest, null, 2));

@@ -24,8 +24,10 @@ export default function ReplayViewer({ matchId, goals = [], myTeam = 0 }) {
   // 180° rotation: team 1 defends +y → without the flip their goal would be at the top
   stateRef.current.flip = (myTeam === 1) !== manualFlip;
 
-  const W = 460, pad = 20;
-  const H = pad * 2 + Math.round((W - pad * 2) * 1.25); // true field ratio 10240:8192
+  // true field ratio 10240:8192 = 1.25 for the DRAWN area: horizontal padding is
+  // `pad`, vertical is padY=54 inside draw() — the height must use the same numbers
+  const W = 460, pad = 20, PAD_Y = 54;
+  const H = PAD_Y * 2 + Math.round((W - pad * 2) * 1.25);
 
   const draw = useCallback(() => {
     const cv = canvasRef.current;
@@ -43,7 +45,7 @@ export default function ReplayViewer({ matchId, goals = [], myTeam = 0 }) {
     const s0 = samples[i], s1 = samples[Math.min(samples.length - 1, i + 1)];
     const lerp = (a, b) => (a == null || b == null) ? a ?? b : a + (b - a) * frac;
 
-    const padY = 54;
+    const padY = PAD_Y;
     const fw = W - pad * 2, fh = H - padY * 2;
     const flip = stateRef.current.flip;
     const cX = (wx) => { if (flip) wx = -wx; return pad + ((wx + 4096) / 8192) * fw; };

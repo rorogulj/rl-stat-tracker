@@ -40,7 +40,9 @@ export function fmtDate(iso) {
 }
 
 export function fmtDur(sec) {
-  if (!sec) return '—';
-  const m = Math.floor(sec / 60), s = Math.round(sec % 60);
+  if (sec == null) return '—';
+  // round the TOTAL first — rounding the remainder alone produced "4:60"
+  const total = Math.round(sec);
+  const m = Math.floor(total / 60), s = total % 60;
   return `${m}:${String(s).padStart(2, '0')}`;
 }

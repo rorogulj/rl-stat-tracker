@@ -143,7 +143,7 @@ const ARCHETYPES = [
   ['Demo merchant', 'Plays the man as much as the ball — demos break the opponent\'s structure.', 'demos/game, % supersonic'],
   ['Boost scavenger', 'Starves opponents of resources: steals their big pads and the ball.', 'big pads stolen/game, steals/game'],
   ['Kickoff bully', 'Wins the first three seconds over and over.', 'kickoff win %, kickoff first-touch %'],
-  ['All-rounder', 'No single dimension dominates — the fallback when no candidate scores ≥ 0.45.', '—'],
+  ['All-rounder', 'No single dimension dominates — the fallback when no candidate scores ≥ 0.35.', '—'],
 ];
 
 export default function InfoPage() {

@@ -160,7 +160,7 @@ export default function Matches({ mode = '' }) {
       <h2 className="section-title">
         <span className="accent">▮</span> All matches
         <span style={{ fontSize: 14, color: '#7e88ab', letterSpacing: 1 }}>
-          {mine.length} · {wins}W {mine.length - wins}L
+          {mine.length} · {wins}W {mine.filter((m) => m.me.win < 0).length}L{mine.some((m) => m.me.win === 0) ? ` ${mine.filter((m) => m.me.win === 0).length}D` : ''}
         </span>
         <input
           className="search-input" style={{ width: 240 }}

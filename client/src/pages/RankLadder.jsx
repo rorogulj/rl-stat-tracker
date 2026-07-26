@@ -130,7 +130,7 @@ function HelpCard({ data, effMode }) {
       <div>
         <div style={h}>Where the data comes from</div>
         <p style={p}>
-          A stratified sample of ranked replays downloaded from ballchasing.com — roughly 250 matches per rank
+          A stratified sample of ranked replays downloaded from ballchasing.com — hundreds to over a thousand matches per rank
           bucket per playlist, all from the current season. Every replay is run through the same analyzer as your
           own games, so the numbers are directly comparable. This {effMode}v{effMode} ladder currently holds{' '}
           {data.totalPlayers.toLocaleString('en-GB')} player performances.
@@ -168,7 +168,7 @@ function HelpCard({ data, effMode }) {
           For each stat category (Attack, Defense, Rotation…) the model measures how far your averages sit from
           the typical profile of every rank (z-distance to that rank&apos;s centroid over the category&apos;s stats) and
           blends the nearest ranks into a tier estimate. The overall estimate does the same over all ~34 stats.
-          The archetype name is simply your strongest category; if all categories sit within 1.5 divisions it
+          The archetype name is simply your strongest category; if all categories sit within ~1.5 tiers it
           becomes &quot;Balanced all-rounder&quot;. It recalculates from your latest games on every visit.
         </p>
       </div>

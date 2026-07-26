@@ -752,7 +752,7 @@ export default function MatchDetail() {
               </>
             )}
           </div>
-          <div className="footnote" style={{ textAlign: 'center' }}>Own goal at bottom · opponent at top</div>
+          <div className="footnote" style={{ textAlign: 'center' }}>Player maps: own goal at bottom · ball map: Blue goal at bottom</div>
         </div>
       </Reveal>
     </>

@@ -4,6 +4,34 @@ All notable changes to RL Stat Tracker. Versions follow `0.x` while the app is
 in active development; each release is tagged (`v0.1.0`) and picked up by
 installed copies through the in-app update button.
 
+## 0.3.3 — 2026-07-26
+
+The xG accuracy release (third independent review, verified numerically).
+
+- **Ground shots exist again**: the shot detector applied projectile gravity to
+  rolling balls, silently discarding almost every floor shot beyond ~1400 uu.
+  Rollers are now detected (+30% more shots on the reference library) — and
+  their misses finally count against finishing.
+- **Recalibrated xG** on 1,385 corrected-pipeline shots with outcomes: predicted
+  probabilities now match actual conversion per bucket and total xG equals total
+  goals on the calibration sample (previous coefficients inflated team xG ~2×).
+  Raw per-shot values are stored for future refits.
+- Slow rollers can't double-count anymore (goal-link window now covers the full
+  allowed flight time); merged shot sequences keep the best touch's time and
+  position (shot-map dots match their xG, no misdirected rebound bonus);
+  synthetic goals go through the same calibration as everything else.
+- **Rating**: in 1v1 the "carries the team" term now uses goal difference (it
+  was structurally zero, capping 1v1 ratings ~92 — a 7-0 stomp can reach the
+  same range as in 3v3); a win by the opponent's own goal no longer tanks the
+  scorer-less team's rating.
+- Rank model: guards against an empty validation set after the player purge and
+  against calibration slopes fitted on clustered pairs; models will be
+  republished freshly trained.
+- Client: "4:60" time formatting fixed everywhere; match list header counts
+  draws; kickoff-goal factor and OT decider time use the active clock; replay
+  viewer proportions actually correct this time; import-failure banner no
+  longer disappears after the first successful import.
+
 ## 0.3.2 — 2026-07-26
 
 Display-correctness pass + safer backup/restore.

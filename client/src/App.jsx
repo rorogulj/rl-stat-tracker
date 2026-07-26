@@ -195,7 +195,7 @@ export default function App() {
           (Settings → Replays → autosave).
         </div>
       )}
-      {status && status.matches === 0 && (status.progress?.errors?.length > 0) && (
+      {status && (status.progress?.errors?.length > 0) && !status.progress?.running && (
         <div className="warn-banner bad">
           <b>Replays are failing to import</b> ({status.progress.errors.length} errors) — open{' '}
           <a href="/server">localhost:7845/server</a> for details. An antivirus quarantining

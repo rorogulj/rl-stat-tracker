@@ -388,7 +388,9 @@ function profile(playerKeyOrKeys, mode) {
       // my fastest goal (from meta.goals by name in that match)
       const fastestGoal = best((g) => {
         const goals = (metaByMid.get(g.r.mid) || {}).goals || [];
-        const mine = goals.filter((x) => x.player === g.r.name);
+        // team check: an own goal is header-credited to the own-goaler, and a name
+        // match alone would make someone else's own goal my "fastest goal" record
+        const mine = goals.filter((x) => x.player === g.r.name && x.team === g.r.team);
         // active clock — raw replay time includes the pre-kickoff countdown
         return mine.length ? Math.min(...mine.map((x) => x.timeActive ?? x.time)) : null;
       }, -1);
@@ -427,15 +429,18 @@ function profile(playerKeyOrKeys, mode) {
         const goals = (metaByMid.get(g.r.mid) || {}).goals || [];
         if (goals.length) matchesWithGoals++;
         // on the active clock no time passes between a goal and the next kickoff,
-        // so "≤10 s since the previous goal" = "≤10 s of play since the kickoff"
+        // so "≤10 s since the previous goal" = "≤10 s of play since the kickoff".
+        // Mixing clocks WITHIN a match (some goals missing timeActive — same-frame
+        // goals etc.) produces negative gaps, so the whole match uses one clock.
+        const allActive = goals.every((x) => x.timeActive != null);
         let prevEnd = 0;
         for (const x of goals) {
-          const xt = x.timeActive ?? x.time;
+          const xt = allActive ? x.timeActive : x.time;
           const sinceKickoff = xt - prevEnd;
           if (sinceKickoff <= 10) {
             if (x.team === g.r.team) forOff++; else againstOff++;
           }
-          prevEnd = x.timeActive != null ? xt : xt + 3;
+          prevEnd = allActive ? xt : xt + 3;
         }
       }
       const w = sum(c((s) => s.possession.kickoffsWon || 0));

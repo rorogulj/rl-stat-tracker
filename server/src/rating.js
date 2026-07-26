@@ -191,17 +191,26 @@ function matchRatings(players, ctx = {}) {
     // the team's shares sum to exactly 1 — a plain (g+a)/teamGoals double-counts
     // assisted goals and inflates assist-heavy teams; at 0-0 the share term is
     // neutral (a hard-fought defensive draw is not everyone underperforming)
-    const myTeamGoals = teamGoals[p.team];
     const g = p.stats.core.goals || 0, a = p.stats.core.assists || 0;
+    // denominator from CREDITED goals (scoreboard stats), not the score — an
+    // opponent's own goal raises the score without anyone on this team scoring,
+    // which used to tank the whole team's share
+    const creditedGoals = players.reduce((acc2, q) => acc2 + (q.team === p.team ? (q.stats.core.goals || 0) : 0), 0);
     const teamAssists = players.reduce((acc2, q) => acc2 + (q.team === p.team ? (q.stats.core.assists || 0) : 0), 0);
     const expShare = 1 / Math.max(1, nTeam[p.team]);
-    const share = myTeamGoals > 0 ? (g + 0.5 * a) / (myTeamGoals + 0.5 * teamAssists) : expShare;
+    const share = creditedGoals > 0 ? (g + 0.5 * a) / (creditedGoals + 0.5 * teamAssists) : expShare;
     const margin = Math.abs(teamGoals[0] - teamGoals[1]);
     const won = teamGoals[p.team] > teamGoals[1 - p.team];
     const lost = teamGoals[p.team] < teamGoals[1 - p.team];
     const nClutch = clutch.get(p.name) || 0;
+    // in 1v1 "share of team goals" is always exactly the expectation (you ARE the
+    // team), so the carry term was structurally zero and impact could never go
+    // above ~71 — use goal difference as the carry signal instead
+    const carry = nTeam[p.team] === 1
+      ? Math.max(-35, Math.min(35, (teamGoals[p.team] - teamGoals[1 - p.team]) * 6))
+      : (share - expShare) * 55;
     let impact = 50
-      + (share - expShare) * 55                       // does he carry his team's goals
+      + carry
       + (won ? Math.min(12, 3 * margin) : lost ? -Math.min(12, 3 * margin) : 0)
       + Math.min(9, nClutch * 3);
     impact = clamp(impact, 1, 99);
