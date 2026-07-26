@@ -15,12 +15,23 @@ const DB_PATH = path.join(DATA_DIR, 'stats.db');
 const PENDING_RESTORE = path.join(DATA_DIR, 'restore-pending.db');
 if (fs.existsSync(PENDING_RESTORE)) {
   try {
+    if (fs.existsSync(DB_PATH)) {
+      // fold the WAL into the main file FIRST — deleting it before the backup used
+      // to drop the freshest matches from the .bak
+      try {
+        const old = new DatabaseSync(DB_PATH);
+        old.exec('PRAGMA wal_checkpoint(TRUNCATE)');
+        old.close();
+      } catch { /* corrupt old db — back up the file as-is */ }
+      // timestamped: a second restore must never overwrite the previous safety copy
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+      fs.copyFileSync(DB_PATH, `${DB_PATH}.bak-${stamp}`);
+    }
     for (const suf of ['-wal', '-shm']) {
       try { fs.unlinkSync(DB_PATH + suf); } catch { /* not there */ }
     }
-    if (fs.existsSync(DB_PATH)) fs.copyFileSync(DB_PATH, DB_PATH + '.bak');
     fs.renameSync(PENDING_RESTORE, DB_PATH);
-    console.log('[db] database restored from backup (old one kept as stats.db.bak)');
+    console.log('[db] database restored from backup (old one kept as a timestamped .bak)');
   } catch (e) {
     console.log('[db] restore failed:', e.message);
     try { fs.unlinkSync(PENDING_RESTORE); } catch { /* ignore */ }
@@ -102,13 +113,27 @@ if (!trnSchema || trnSchema.value !== '2') {
   db.prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES ('trn_schema', '2')`).run();
 }
 
-// auto-reimport when the analyzer version changes
+// auto-reimport when the analyzer version changes — but NEVER throw away analysis
+// that cannot be rebuilt: after a restore on a new PC the replay files may not
+// exist, and wiping there would silently destroy the user's history
 const { ANALYZER_VERSION } = require('./analyzer');
 const verRow = db.prepare(`SELECT value FROM settings WHERE key = 'analyzer_version'`).get();
 if (!verRow || Number(verRow.value) !== ANALYZER_VERSION) {
-  db.exec(`DELETE FROM player_stats; DELETE FROM timelines; DELETE FROM matches; DELETE FROM import_log;`);
-  db.prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES ('analyzer_version', ?)`).run(String(ANALYZER_VERSION));
-  console.log('[db] new analyzer version → reimporting all replays');
+  const haveMatches = (() => {
+    try { return db.prepare(`SELECT COUNT(*) n FROM matches WHERE benchmark = 0`).get().n; } catch { return 0; }
+  })();
+  const replaysOnDisk = (() => {
+    try { return require('./replaydir').replayFileCount(); } catch { return 0; }
+  })();
+  if (haveMatches > 0 && replaysOnDisk === 0) {
+    // keep the old analysis and leave the version marker unset — the reimport
+    // will trigger on a later boot once replays are present again
+    console.log(`[db] analyzer changed but no replay files found on disk — keeping the existing ${haveMatches} matches (old analyzer version)`);
+  } else {
+    db.exec(`DELETE FROM player_stats; DELETE FROM timelines; DELETE FROM matches; DELETE FROM import_log;`);
+    db.prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES ('analyzer_version', ?)`).run(String(ANALYZER_VERSION));
+    console.log('[db] new analyzer version → reimporting all replays');
+  }
 }
 
 const stmts = {

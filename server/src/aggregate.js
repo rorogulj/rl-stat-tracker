@@ -389,7 +389,8 @@ function profile(playerKeyOrKeys, mode) {
       const fastestGoal = best((g) => {
         const goals = (metaByMid.get(g.r.mid) || {}).goals || [];
         const mine = goals.filter((x) => x.player === g.r.name);
-        return mine.length ? Math.min(...mine.map((x) => x.time)) : null;
+        // active clock — raw replay time includes the pre-kickoff countdown
+        return mine.length ? Math.min(...mine.map((x) => x.timeActive ?? x.time)) : null;
       }, -1);
       // biggest comeback: max deficit recovered in a win
       const comeback = best((g) => {
@@ -425,13 +426,16 @@ function profile(playerKeyOrKeys, mode) {
       for (const g of games) {
         const goals = (metaByMid.get(g.r.mid) || {}).goals || [];
         if (goals.length) matchesWithGoals++;
+        // on the active clock no time passes between a goal and the next kickoff,
+        // so "≤10 s since the previous goal" = "≤10 s of play since the kickoff"
         let prevEnd = 0;
         for (const x of goals) {
-          const sinceKickoff = x.time - prevEnd;
+          const xt = x.timeActive ?? x.time;
+          const sinceKickoff = xt - prevEnd;
           if (sinceKickoff <= 10) {
             if (x.team === g.r.team) forOff++; else againstOff++;
           }
-          prevEnd = x.time + 3;
+          prevEnd = x.timeActive != null ? xt : xt + 3;
         }
       }
       const w = sum(c((s) => s.possession.kickoffsWon || 0));

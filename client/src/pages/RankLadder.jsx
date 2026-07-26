@@ -112,7 +112,7 @@ function ArchetypeCard({ arch, totalPlayers, myTier }) {
               <RankBadge tier={tier} size="sm" estimate />
               <span style={{ fontSize: 11, fontWeight: 650, color: d > 0.2 ? 'var(--green)' : d < -0.2 ? 'var(--red)' : 'var(--faint)' }}>
                 {d > 0.2 ? `▲ +${d.toFixed(1)}` : d < -0.2 ? `▼ ${d.toFixed(1)}` : '— even'}
-                {Math.abs(d) > 0.2 ? ' div' : ''}
+                {Math.abs(d) > 0.2 ? (Math.abs(d) >= 1.95 ? ' tiers' : ' tier') : ''}
               </span>
             </div>
           );
@@ -243,7 +243,7 @@ export default function RankLadder({ mode = '' }) {
     <>
       <h2 className="section-title">Rank ladder — {effMode}v{effMode} <Scribble>climb</Scribble>
         <span className="sheet-note">
-          how every stat scales from Bronze to SSL · {data.totalPlayers.toLocaleString('en-GB')} benchmark players (ballchasing)
+          how every stat scales from Bronze to SSL · {data.totalPlayers.toLocaleString('en-GB')} benchmark player-games (ballchasing)
           {data.myBucket && <> · you are <b style={{ color: BUCKET_COLORS[data.myBucket] }}>{data.myBucket}</b></>}
         </span>
       </h2>

@@ -69,9 +69,10 @@ export function drawField2D(ctx, toX, toY, { flip = false, pads = true, floor = 
     }
     ctx.restore();
   };
-  // world +y goal (orange defends +y) — flip-dependent colors are handled by the caller via toY
-  goalLine(FIELD.Y, flip ? 'rgba(85,163,245,0.8)' : 'rgba(240,154,82,0.8)');
-  goalLine(-FIELD.Y, flip ? 'rgba(240,154,82,0.8)' : 'rgba(85,163,245,0.8)');
+  // world +y goal is Orange's — the coordinate transform (toY) already handles the
+  // flip, so the colors must NOT be swapped too (that double-corrected them)
+  goalLine(FIELD.Y, 'rgba(240,154,82,0.8)');
+  goalLine(-FIELD.Y, 'rgba(85,163,245,0.8)');
 
   // field lines
   ctx.strokeStyle = 'rgba(160,185,255,0.4)';

@@ -8,28 +8,7 @@ const { stmts, saveAnalysis } = require('./db');
 
 const RRROCKET = path.join(__dirname, '..', '..', 'tools', 'rrrocket.exe');
 
-function defaultReplayDir() {
-  if (process.env.RL_REPLAY_DIR) return process.env.RL_REPLAY_DIR;
-  // Documents is frequently redirected (OneDrive backup is the consumer-Windows
-  // default) — ask the shell where it really is instead of assuming ~/Documents
-  const docCandidates = [];
-  try {
-    const out = require('child_process').execSync(
-      'reg query "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders" /v Personal',
-      { encoding: 'utf8', windowsHide: true });
-    const m = out.match(/Personal\s+REG(?:_EXPAND)?_SZ\s+(.+)/);
-    if (m) docCandidates.push(m[1].trim().replace(/%USERPROFILE%/i, os.homedir()));
-  } catch { /* registry unavailable */ }
-  if (process.env.OneDrive) docCandidates.push(path.join(process.env.OneDrive, 'Documents'));
-  docCandidates.push(path.join(os.homedir(), 'Documents'));
-  for (const docs of docCandidates) {
-    for (const sub of ['DemosEpic', 'Demos']) {
-      const p = path.join(docs, 'My Games', 'Rocket League', 'TAGame', sub);
-      if (fs.existsSync(p)) return p;
-    }
-  }
-  return path.join(docCandidates[0], 'My Games', 'Rocket League', 'TAGame', 'DemosEpic');
-}
+const { defaultReplayDir } = require('./replaydir');
 
 const REPLAY_DIR = defaultReplayDir();
 

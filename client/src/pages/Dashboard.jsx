@@ -612,7 +612,7 @@ export default function Dashboard({ mode = '', playerKey = null }) {
               {strengths.length ? strengths.map((s) => (
                 <div key={s.key} className="srow">
                   <span className="slbl">{s.label}</span>
-                  <span className="sval">{s.pct}th pct</span>
+                  <span className="sval">{ord(s.pct)} pct</span>
                   <span className="spct"><span className="pbar"><span className="pfill hi" style={{ width: s.pct + '%' }} /></span></span>
                 </div>
               )) : <div className="rank-note">nothing stands out above the 70th percentile</div>}
@@ -622,7 +622,7 @@ export default function Dashboard({ mode = '', playerKey = null }) {
               {weaknesses.length ? weaknesses.map((s) => (
                 <div key={s.key} className="srow">
                   <span className="slbl">{s.label}</span>
-                  <span className="sval">{s.pct}th pct</span>
+                  <span className="sval">{ord(s.pct)} pct</span>
                   <span className="spct"><span className="pbar"><span className="pfill lo" style={{ width: Math.max(6, s.pct) + '%' }} /></span></span>
                 </div>
               )) : <div className="rank-note">no stats below the 30th percentile</div>}
@@ -965,15 +965,15 @@ export default function Dashboard({ mode = '', playerKey = null }) {
 }
 
 function MiniMatch({ m }) {
-  const win = m.me?.win > 0;
+  const res = m.me?.win > 0 ? 'win' : m.me?.win < 0 ? 'loss' : 'draw';
   return (
-    <Link to={`/match/${encodeURIComponent(m.id)}`} className={`match-card ${win ? 'win' : 'loss'}`}>
+    <Link to={`/match/${encodeURIComponent(m.id)}`} className={`match-card ${res}`}>
       <div className="edge" />
       <div>
         <div className="match-score">
           <span className="b">{m.team0_score}</span><span className="sep">:</span><span className="o">{m.team1_score}</span>
         </div>
-        <div className="match-result-tag">{win ? 'WIN' : 'LOSS'}</div>
+        <div className="match-result-tag">{res.toUpperCase()}</div>
       </div>
       <div className="match-info">
         <div className="map">{m.map}</div>

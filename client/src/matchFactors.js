@@ -13,6 +13,7 @@ export function matchFactors(m) {
   const sum = (t, fn) => T[t].reduce((a, p) => a + (fn(p) || 0), 0);
   const goals = m.meta?.goals || [];
   const score = [m.team0_score, m.team1_score];
+  if (score[0] === score[1]) return []; // draw — there is no "why X won"
   const winner = score[0] > score[1] ? 0 : 1;
   const tn = (t) => (t === 0 ? 'Blue' : 'Orange');
   const factors = [];
@@ -155,8 +156,9 @@ export function matchFactors(m) {
   // goal in the last minute of regulation that decided it
   if (!m.overtime && goals.length && Math.abs(score[0] - score[1]) === 1) {
     const last = goals[goals.length - 1];
-    if (last.time > 240 && (last.team === 1 ? 1 : 0) === winner) {
-      add(24, winner, 'Late winner', `${last.player} broke the deadlock at ${fd(last.time)} — no time to answer.`);
+    const lastT = last.timeActive ?? last.time; // active clock — raw time includes countdowns
+    if (lastT > 240 && (last.team === 1 ? 1 : 0) === winner) {
+      add(24, winner, 'Late winner', `${last.player} broke the deadlock at ${fd(lastT)} — no time to answer.`);
     }
   }
 

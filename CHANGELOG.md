@@ -4,6 +4,27 @@ All notable changes to RL Stat Tracker. Versions follow `0.x` while the app is
 in active development; each release is tagged (`v0.1.0`) and picked up by
 installed copies through the in-app update button.
 
+## 0.3.2 — 2026-07-26
+
+Display-correctness pass + safer backup/restore.
+
+- Momentum graph: goal markers now sit at the right moment (they used the raw
+  replay clock and a chart axis that silently dropped them entirely).
+- 2D replay viewer / shot map: goal colors no longer swap when the view is
+  flipped; field proportions corrected to the real arena ratio.
+- Draws (forfeits) show as "D" instead of counting as losses; "why X won"
+  factors are skipped for drawn matches.
+- "Late winner", fastest goal and kickoff-goal records use the active game
+  clock (they fired early / almost never due to countdown time).
+- Labels: proper ordinals ("33rd pct"), rank-ladder deltas say "tier" (a delta
+  of 1 is one tier, not one division), "benchmark player-games", Compare's
+  headline number is labeled "Form (last 10)" as it always was.
+- Stat formulas on the Info page match the engine's actual constants.
+- Restore: safety copies are timestamped (a second restore can't overwrite the
+  first backup), the WAL is folded in before backing up (no lost fresh matches),
+  and an analyzer upgrade no longer wipes restored history on a machine that
+  has no replay files to rebuild it from.
+
 ## 0.3.1 — 2026-07-26
 
 Install reliability + analyzer follow-up fixes (from the second independent review).

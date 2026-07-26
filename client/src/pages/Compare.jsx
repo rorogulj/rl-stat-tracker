@@ -109,8 +109,8 @@ export default function Compare({ mode = '' }) {
               <div className="cmp-summary">
                 <div className={`cmp-score a ${ra != null && rb != null && ra > rb ? 'lead' : ''}`}>{ra?.toFixed(0) ?? '—'}</div>
                 <div className="cmp-score-mid">
-                  <div className="rank-cap">Overall rating</div>
-                  <div className="rank-note">avg game rating (1–99) from replays</div>
+                  <div className="rank-cap">Form</div>
+                  <div className="rank-note">avg game rating (1–99), last 10 games</div>
                 </div>
                 <div className={`cmp-score b ${ra != null && rb != null && rb > ra ? 'lead' : ''}`}>{rb?.toFixed(0) ?? '—'}</div>
                 <div className="cmp-tally-bar">

@@ -56,7 +56,9 @@ function momentumSeries(tilt, goals) {
     ema += 0.25 * (y - ema);
     let imp = 0;
     for (const g of goals) {
-      if (g.time <= t) imp += (g.team === 0 ? 1 : -1) * 0.9 * Math.exp(-(t - g.time) / 25);
+      // fieldTilt samples run on the ACTIVE clock — raw g.time lags by countdowns
+      const gt = g.timeActive ?? g.time;
+      if (gt <= t) imp += (g.team === 0 ? 1 : -1) * 0.9 * Math.exp(-(t - gt) / 25);
     }
     const v = Math.max(-1, Math.min(1, 0.62 * ema + 0.45 * imp));
     return { t, m: v, pos: Math.max(0, v), neg: Math.min(0, v) };
@@ -503,7 +505,9 @@ export default function MatchDetail() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-                    <XAxis dataKey="t" tick={{ fill: '#7e88ab', fontSize: 11 }} tickFormatter={(t) => fmtDur(t)} minTickGap={50} />
+                    {/* numeric axis: a categorical axis silently drops ReferenceDots whose x isn't an exact sample value */}
+                    <XAxis dataKey="t" type="number" domain={['dataMin', 'dataMax']}
+                      tick={{ fill: '#7e88ab', fontSize: 11 }} tickFormatter={(t) => fmtDur(t)} minTickGap={50} />
                     <YAxis domain={[-1, 1]} ticks={[-1, 0, 1]} width={58}
                       tick={{ fill: '#7e88ab', fontSize: 11 }}
                       tickFormatter={(v) => (v > 0 ? 'Blue' : v < 0 ? 'Orange' : '')} />
@@ -514,7 +518,7 @@ export default function MatchDetail() {
                     <Area dataKey="neg" stroke="none" fill="url(#momO)" isAnimationActive animationDuration={900} />
                     <Area dataKey="m" stroke="#b9c2dd" strokeWidth={1.5} fill="none" isAnimationActive animationDuration={900} />
                     {(m.meta?.goals || []).map((g, i) => (
-                      <ReferenceDot key={i} x={g.time} y={g.team === 0 ? 0.9 : -0.9} r={5}
+                      <ReferenceDot key={i} x={g.timeActive ?? g.time} y={g.team === 0 ? 0.9 : -0.9} r={5}
                         fill={g.team === 0 ? '#55a3f5' : '#f09a52'} stroke="#010828" strokeWidth={1.5}
                         label={{ value: '⚽', fontSize: 10, position: g.team === 0 ? 'top' : 'bottom', fill: '#b9c2dd' }} />
                     ))}

@@ -74,7 +74,7 @@ export default function Matches({ mode = '' }) {
     const rows = [['date', 'map', 'mode', 'result', 'score', 'opponents', 'my_goals', 'my_assists', 'my_saves', 'my_shots', 'my_score', 'rating', 'overtime', 'mvp']];
     for (const m of filtered) {
       rows.push([
-        m.date, m.map, `${m.team_size}v${m.team_size}`, m.me.win > 0 ? 'W' : 'L',
+        m.date, m.map, `${m.team_size}v${m.team_size}`, m.me.win > 0 ? 'W' : m.me.win < 0 ? 'L' : 'D',
         `${m.team0_score}-${m.team1_score}`, (m.opponents || []).join('; '),
         m.me.goals, m.me.assists, m.me.saves, m.me.shots, m.me.score,
         m.me.gameScore ?? '', m.overtime ? 1 : 0, m.me.mvp ? 1 : 0,
@@ -147,7 +147,7 @@ export default function Matches({ mode = '' }) {
               <div className="sess-dots">
                 {s.matches.map((m) => (
                   <Link key={m.id} to={`/match/${encodeURIComponent(m.id)}`}
-                    className={`sess-dot ${m.me.win > 0 ? 'w' : 'l'}`}
+                    className={`sess-dot ${m.me.win > 0 ? 'w' : m.me.win < 0 ? 'l' : 'd'}`}
                     title={`${m.map} · ${m.team0_score}-${m.team1_score}${m.me.gameScore != null ? ' · rating ' + m.me.gameScore : ''}`} />
                 ))}
               </div>
@@ -183,13 +183,13 @@ export default function Matches({ mode = '' }) {
           </thead>
           <tbody>
             {shown.map((m) => {
-              const win = m.me.win > 0;
+              const res = m.me.win > 0 ? 'w' : m.me.win < 0 ? 'l' : 'd';
               const r = m.me.gameScore;
               return (
                 <tr key={m.id} className="match-row" onClick={() => navigate(`/match/${encodeURIComponent(m.id)}`)}>
                   <td style={{ color: '#7e88ab', fontSize: 12.5 }}>{fmtDate(m.date)}</td>
                   <td>
-                    <span className={`result-pill ${win ? 'w' : 'l'}`}>{win ? 'W' : 'L'}</span>
+                    <span className={`result-pill ${res}`}>{res.toUpperCase()}</span>
                     <span style={{ marginLeft: 9, fontWeight: 650 }}>
                       <span style={{ color: 'var(--blue)' }}>{m.team0_score}</span>
                       <span style={{ color: '#4d5678' }}> : </span>

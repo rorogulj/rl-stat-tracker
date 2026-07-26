@@ -1387,3 +1387,10 @@ table.cmp.opp-table { width: 100%; }
 .warn-banner.bad { background: rgba(255, 109, 109, 0.08); border-color: rgba(255, 109, 109, 0.4); }
 .warn-banner code { color: var(--gold, #ffd166); }
 .warn-banner a { color: var(--neon); text-decoration: underline; }
+
+/* draws (forfeits etc.) are neither win nor loss */
+.result-pill.d { color: var(--gold, #ffd166); background: rgba(255, 209, 102, 0.12); }
+.sess-dot.d { background: var(--gold, #ffd166); }
+
+.match-card.draw .edge { background: var(--gold, #ffd166); }
+.draw .match-result-tag { color: var(--gold, #ffd166); }

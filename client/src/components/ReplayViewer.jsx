@@ -24,7 +24,8 @@ export default function ReplayViewer({ matchId, goals = [], myTeam = 0 }) {
   // 180° rotation: team 1 defends +y → without the flip their goal would be at the top
   stateRef.current.flip = (myTeam === 1) !== manualFlip;
 
-  const W = 460, H = 580, pad = 20;
+  const W = 460, pad = 20;
+  const H = pad * 2 + Math.round((W - pad * 2) * 1.25); // true field ratio 10240:8192
 
   const draw = useCallback(() => {
     const cv = canvasRef.current;

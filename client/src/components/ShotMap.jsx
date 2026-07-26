@@ -9,8 +9,10 @@ import { drawField2D } from '../field.js';
 export default function ShotMap({ players, width = 420 }) {
   const ref = useRef(null);
   const [hover, setHover] = useState(null);
-  const H = Math.round(width * 1.28);
+  // true field proportions: 10240/8192 = 1.25 (plus header/legend strip of 76 px)
   const pad = 18;
+  const fwCalc = width - pad * 2;
+  const H = Math.round(fwCalc * 1.25) + pad * 2 + 76;
 
   const shots = [];
   for (const p of players) {
