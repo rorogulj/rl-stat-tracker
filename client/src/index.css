@@ -1364,3 +1364,16 @@ table.cmp.opp-table { width: 100%; }
 .linklike:disabled { color: var(--muted); cursor: default; }
 
 .w-logo { width: 62px; height: 62px; margin-bottom: 14px; filter: drop-shadow(0 0 14px rgba(111, 255, 0, 0.3)); }
+
+/* boot splash: shown only while the first /api/status check is in flight */
+.boot-splash {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  opacity: 0; animation: splashIn 0.4s ease 0.18s forwards;
+}
+.boot-splash img {
+  width: 76px; height: 76px;
+  filter: drop-shadow(0 0 18px rgba(111, 255, 0, 0.35));
+  animation: splashPulse 1.6s ease-in-out infinite;
+}
+@keyframes splashIn { to { opacity: 1; } }
+@keyframes splashPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }

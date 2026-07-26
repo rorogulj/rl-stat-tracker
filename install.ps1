@@ -168,6 +168,8 @@ foreach ($s in @(
   $lnk.Arguments = $s.Args
   $lnk.WorkingDirectory = $Root
   $lnk.Description = 'RL Stat Tracker - local Rocket League stats'
+  $ico = Join-Path $AppDir 'client\public\logo.ico'
+  if (Test-Path $ico) { $lnk.IconLocation = "$ico,0" }
   $lnk.Save()
 }
 }

@@ -39,6 +39,48 @@ function injectExportCss(extra = '') {
   return () => style.remove();
 }
 
+const SITE = 'rl-stat-tracker.vercel.app';
+
+let _logo = null;
+function loadLogo() {
+  if (_logo !== null) return Promise.resolve(_logo);
+  return new Promise((res) => {
+    const img = new Image();
+    img.onload = () => { _logo = img; res(img); };
+    img.onerror = () => { _logo = false; res(false); };
+    img.src = '/logo-icon-transparent.svg';
+  });
+}
+
+/** Append the branded footer strip (logo + site) to an html2canvas result. */
+async function brandCanvas(canvas, scale) {
+  const logo = await loadLogo();
+  const s = Math.max(1, scale || 1);
+  const stripH = Math.round(46 * s);
+  const out = document.createElement('canvas');
+  out.width = canvas.width;
+  out.height = canvas.height + stripH;
+  const ctx = out.getContext('2d');
+  ctx.fillStyle = '#010828';
+  ctx.fillRect(0, 0, out.width, out.height);
+  ctx.drawImage(canvas, 0, 0);
+  ctx.fillStyle = 'rgba(239,244,255,0.08)';
+  ctx.fillRect(0, canvas.height, out.width, Math.max(1, Math.round(s)));
+  const pad = 20 * s, icon = 22 * s;
+  const cy = canvas.height + stripH / 2;
+  if (logo) ctx.drawImage(logo, pad, cy - icon / 2, icon, icon);
+  ctx.textBaseline = 'middle';
+  ctx.font = `400 ${Math.round(12 * s)}px Anton, "Arial Narrow", sans-serif`;
+  ctx.fillStyle = '#EFF4FF';
+  ctx.textAlign = 'left';
+  ctx.fillText('RL STAT TRACKER', pad + icon + 10 * s, cy + s);
+  ctx.font = `500 ${Math.round(11.5 * s)}px "Cascadia Mono", Consolas, monospace`;
+  ctx.fillStyle = '#7e88ab';
+  ctx.textAlign = 'right';
+  ctx.fillText(SITE, out.width - pad, cy + s);
+  return out;
+}
+
 function downloadCanvas(canvas, name) {
   return new Promise((resolve) => canvas.toBlob((blob) => {
     const a = document.createElement('a');
@@ -57,13 +99,14 @@ export async function downloadPagePng(filename) {
   const cleanup = injectExportCss();
   await new Promise((r) => setTimeout(r, 250));
   try {
+    const scale = Math.min(1.4, 2400 / Math.max(1, el.scrollWidth));
     const canvas = await html2canvas(el, {
       backgroundColor: '#010828',
-      scale: Math.min(1.4, 2400 / Math.max(1, el.scrollWidth)),
+      scale,
       useCORS: true,
       logging: false,
     });
-    await downloadCanvas(canvas, filename);
+    await downloadCanvas(await brandCanvas(canvas, scale), filename);
   } finally {
     cleanup();
   }
@@ -82,13 +125,14 @@ export async function downloadElementPng(selector, name, opts = {}) {
   const cleanup = injectExportCss(opts.extraCss || '');
   await new Promise((r) => setTimeout(r, opts.settleMs ?? 250));
   try {
+    const scale = opts.scale ?? Math.min(1.5, 2400 / Math.max(1, el.scrollWidth));
     const canvas = await html2canvas(el, {
       backgroundColor: '#010828',
-      scale: opts.scale ?? Math.min(1.5, 2400 / Math.max(1, el.scrollWidth)),
+      scale,
       useCORS: true,
       logging: false,
     });
-    await downloadCanvas(canvas, name);
+    await downloadCanvas(await brandCanvas(canvas, scale), name);
   } finally {
     cleanup();
   }
@@ -268,9 +312,21 @@ export async function downloadMatchCard(m, factors) {
     });
   }
 
-  // footer
-  font(13, 500); ctx.fillStyle = '#4d5678'; ctx.textAlign = 'center';
-  ctx.fillText('Generated locally by RL Stat Tracker — replay analysis, xG, component ratings', W / 2, H - 26);
+  // footer: logo + site
+  const logo = await loadLogo();
+  font(13, 500); ctx.fillStyle = '#4d5678';
+  const foot = `Generated locally by RL Stat Tracker · ${SITE}`;
+  if (logo) {
+    const tw = ctx.measureText(foot).width;
+    const ic = 22;
+    const startX = W / 2 - (ic + 10 + tw) / 2;
+    ctx.drawImage(logo, startX, H - 26 - 16, ic, ic);
+    ctx.textAlign = 'left';
+    ctx.fillText(foot, startX + ic + 10, H - 26);
+  } else {
+    ctx.textAlign = 'center';
+    ctx.fillText(foot, W / 2, H - 26);
+  }
 
   cv.toBlob((blob) => {
     const a = document.createElement('a');

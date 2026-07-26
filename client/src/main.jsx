@@ -19,7 +19,14 @@ function Boot() {
     return () => { alive = false; };
   }, []);
 
-  if (state === 'checking') return null; // navy background, no flash
+  if (state === 'checking') {
+    // splash fades in after a short delay (CSS), so fast local responses never flash it
+    return (
+      <div className="boot-splash">
+        <img src="/logo-icon-transparent.svg" alt="" />
+      </div>
+    );
+  }
   if (state === 'down') return <Welcome onUp={() => setState('up')} />;
   return (
     <BrowserRouter>
