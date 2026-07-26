@@ -1397,3 +1397,55 @@ table.cmp.opp-table { width: 100%; }
 
 .w-dot.ok { background: var(--neon); animation: none; }
 .w-btn.sm { padding: 6px 16px; font-size: 12px; margin-left: 4px; }
+
+/* ========== Info: encyclopedia article layout ========== */
+.wiki { max-width: 860px; margin: 0 auto; padding-bottom: 60px; }
+.wk-title {
+  font-family: var(--font-display); font-weight: 400; text-transform: uppercase;
+  font-size: 40px; line-height: 1; margin: 8px 0 14px;
+  border-bottom: 1px solid var(--border); padding-bottom: 16px;
+}
+.wk-lead { font-size: 13.5px; line-height: 1.75; color: var(--text-2); margin-bottom: 22px; }
+.wk-toc { padding: 18px 24px; margin-bottom: 30px; max-width: 420px; }
+.wk-toc-h {
+  font-family: var(--font-display); font-weight: 400; text-transform: uppercase;
+  font-size: 14px; letter-spacing: 0.06em; margin-bottom: 10px; color: var(--text);
+}
+.wk-toc ol { list-style: none; margin: 0; padding: 0; }
+.wk-toc li { margin: 5px 0; font-size: 12.5px; }
+.wk-toc a { color: var(--text-2); text-decoration: none; }
+.wk-toc a:hover { color: var(--neon); }
+.wk-section { margin-bottom: 34px; scroll-margin-top: 90px; }
+.wk-h2 {
+  font-family: var(--font-display); font-weight: 400; text-transform: uppercase;
+  font-size: 22px; letter-spacing: 0.02em; margin-bottom: 14px;
+  border-bottom: 1px solid var(--border); padding-bottom: 8px;
+}
+.wk-num { color: var(--neon); margin-right: 4px; }
+.wk-h3 {
+  font-family: var(--font-display); font-weight: 400; text-transform: uppercase;
+  font-size: 15px; letter-spacing: 0.05em; margin: 18px 0 8px; color: var(--text);
+}
+.wk-section p { font-size: 13px; line-height: 1.8; color: var(--text-2); margin: 0 0 12px; }
+.wk-section p b { color: var(--text); }
+.wk-section p i { color: var(--text); font-style: italic; }
+.wk-section a { color: var(--neon); text-decoration: underline; }
+.wk-formula {
+  font-size: 13px; color: var(--text); background: var(--panel-solid);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 12px 18px; margin: 6px 0 14px; overflow-x: auto; white-space: nowrap;
+}
+.wk-m {
+  color: var(--text); background: rgba(255, 255, 255, 0.05);
+  padding: 1px 5px; border-radius: 4px; font-size: 12px;
+}
+.wk-table { border: 1px solid var(--border); border-radius: var(--radius-sm); margin: 6px 0 14px; overflow: hidden; }
+.wk-row { display: grid; grid-template-columns: 150px 1fr; gap: 14px; padding: 9px 16px; font-size: 12.5px; line-height: 1.6; }
+.wk-row:nth-child(odd) { background: rgba(255, 255, 255, 0.025); }
+.wk-cell-name { font-weight: 700; color: var(--text); }
+.wk-cell-desc { color: var(--text-2); }
+.wk-signals { color: var(--muted); }
+.wk-search { width: 300px; margin: 4px 0 14px; }
+.wk-gloss-entry { font-size: 12.5px; line-height: 1.75; color: var(--text-2); margin: 0 0 9px; }
+.wk-gloss-entry b { color: var(--text); }
+@media (max-width: 640px) { .wk-row { grid-template-columns: 1fr; gap: 3px; } .wk-title { font-size: 30px; } }

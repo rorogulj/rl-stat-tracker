@@ -4,6 +4,14 @@ All notable changes to RL Stat Tracker. Versions follow `0.x` while the app is
 in active development; each release is tagged (`v0.1.0`) and picked up by
 installed copies through the in-app update button.
 
+## 0.3.5 — 2026-07-26
+
+- The Info page is now a full encyclopedia article: numbered sections with the
+  actual mathematics behind every number (shot detection gates, the xG model and
+  its Platt calibration, all three rating layers with their formulas and weights,
+  the GBDT rank model and its calibration, percentile conventions, archetype
+  scoring), a contents box, and a glossary of all statistics.
+
 ## 0.3.4 — 2026-07-26
 
 - The public welcome page now detects a tracker running on YOUR machine and

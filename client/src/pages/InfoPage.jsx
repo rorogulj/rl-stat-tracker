@@ -1,142 +1,24 @@
+/**
+ * Info — the app's encyclopedia. Written as a long-form article (Wikipedia-style
+ * prose with numbered sections, a contents box and inline mathematics) rather
+ * than a card list. RULE (CLAUDE.md): every new or changed number, statistic,
+ * model or archetype MUST update its section here. The stats glossary at the
+ * end renders straight from statDefs.js (desc + math), so new stats only need
+ * those two fields filled in.
+ */
 import { useMemo, useState } from 'react';
 import { STAT_DEFS } from '../statDefs.js';
-import Scribble from '../components/Scribble.jsx';
 
-/**
- * INFO / WIKI page — explains every number, model and term in the app.
- * RULE: every new or changed stat/feature/model MUST get (or update)
- * its entry here. Statistics are pulled from STAT_DEFS (desc + math),
- * so for those it's enough to maintain statDefs.js.
- */
-
-const CONCEPTS = [
-  {
-    term: 'Game rating (1–99)', cat: 'Ratings',
-    body: 'The number next to every player in every match. Three layers: 55% performance vs your own lobby (z-scores of 5 components against the other players in that match, rescaled by lobby size so 1v1 dominance can reach the same range as 3v3), 30% absolute production (z-score vs the entire database for that mode), 15% match impact (share of team goal involvements — an assist counts half a goal and the team\'s shares sum to 1; win/margin ±12; clutch bonus for OT or late equal-score goals on the active game clock; 0-0 is neutral, not a penalty). Clean sheets floor the defense component at 58; shortened lobbies (leavers) scale possession/touch stats. Computed on the fly — old replays never need reimporting.',
-  },
-  {
-    term: 'Rating components (Attack / Defense / Possession / Boost / Pressure)', cat: 'Ratings',
-    body: 'The five axes of the profile radar. Each is a per-match z-score vs the lobby, averaged over your games: Attack (goals, xG, shots, finishing), Defense (saves, clears, goalside positioning — weight grows with rank), Possession (touches, possession %, turnovers), Boost (economy, stolen pads, time at zero), Pressure (territory, demos, 50/50s, clutch moments). The dashed ring at 50 on the radar = the average player from your lobbies.',
-  },
-  {
-    term: 'Form', cat: 'Ratings',
-    body: 'Average game rating over your recent games (shown in the profile hero). 50 = average for your lobbies; above 55 is a good run.',
-  },
-  {
-    term: 'Performance estimate (per match)', cat: 'Models',
-    body: 'The "Perf. estimate" column in a match: the benchmark model reads that single game\'s 34 stats against rank centroids, then shrinks toward the lobby prior (average known rank of the lobby): 0.45·estimate + 0.55·prior, clamped to prior±2.5 tiers. One great game in a Champ lobby therefore cannot read as SSL. The unshrunk value feeds the smurf detector.',
-  },
-  {
-    term: 'Model estimate (GBDT)', cat: 'Models',
-    body: 'The profile\'s learned rank estimate. A pure-JS gradient-boosted-trees model (LightGBM-style: histogram splits, 32 bins, depth ≤5, up to 400 trees with early stopping) trained on the ballchasing benchmark corpus — 34 stats per player-game → rank tier 2–22. Validation is split by match so teammates never leak between train and val. Predictions are calibrated to tracker.gg using players from YOUR matches with known real ranks (linear fit, ≥8 pairs for slope). Retrains automatically when the corpus grows >5%. Status on the Server page.',
-  },
-  {
-    term: 'Centroid model (benchmark archetype, ladder)', cat: 'Models',
-    body: 'The simpler sibling of the GBDT: each rank bucket\'s mean/σ per stat forms a centroid; your averages get a z-distance to every centroid and a softmax (T=1.2) turns distances into a weighted tier. The Ladder\'s "Benchmark archetype" card runs it per stat CATEGORY (attack/defense/rotation/possession/boost/movement) to say things like "you attack like Diamond I". Its overall is anchored to the calibrated GBDT so both models agree.',
-  },
-  {
-    term: 'Session form', cat: 'Models',
-    body: 'The capsule under your name: the GBDT model\'s read of your LAST calendar day of play (same session definition as the Matches page), shown as a rank icon with the number of games.',
-  },
-  {
-    term: 'Gap to next rank', cat: 'Models',
-    body: 'Your last 20 games vs the benchmark averages of the NEXT SUB-RANK (Champ 1 → Champ 2). Benchmark centroids exist per whole rank (8 buckets), so the centroid for an in-between tier is linearly interpolated between bucket anchors. Rows are sorted by z = deficit/σ — how many standard deviations you trail the next rank\'s average. The bar shows your average as a share of the next rank\'s average; the gold tick marks where your CURRENT rank\'s average sits.',
-  },
-  {
-    term: 'Percentiles (profile sheets)', cat: 'Models',
-    body: 'Per-stat percentile bars. Source depends on data available: "vs champion players (ballchasing)" once the benchmark bucket for your rank has ≥200 player-rows, otherwise vs all players from your own matches. Green ≥65th, gold 35–65th, red <35th.',
-  },
-  {
-    term: 'Benchmark corpus (ballchasing)', cat: 'Models',
-    body: 'A stratified sample of ranked replays downloaded from ballchasing.com — target 1000 (2v2) / 1600 (1v1) / 800 (3v3) matches per rank bucket, current season only. Every replay runs through the same analyzer as your games, so numbers are directly comparable. Personal queries always exclude benchmark data. Download progress lives on the Server page.',
-  },
-  {
-    term: 'xG (expected goals)', cat: 'Match analysis',
-    body: 'Each detected shot gets a probability of scoring from distance, angle, speed, open-goal factor and defenders on the shot line at the moment of the shot, calibrated on real shots (Platt scaling). Consecutive touches by the same player in one attacking sequence count as ONE chance (best of the sequence), a rebound right after a teammate\'s shot is worth more, and own goals are never credited to the own-goaler\'s xG. Note: this is an "on-frame" xG (xGOT semantics — would it go in if not saved), so average conversion is ~50%, higher than broadcast-football xG.',
-  },
-  {
-    term: 'Key stats (match page)', cat: 'Match analysis',
-    body: 'Where this match stood out from YOUR average: stats deviating ±20% or more from your career per-game average in that mode, top 7, green = better, red = worse.',
-  },
-  {
-    term: 'Key factors / Why X won', cat: 'Match analysis',
-    body: 'Twelve candidate explanations (finishing vs xG, chances created, goalkeeping, rotation errors, kickoff goals, territory, ball security, 50/50s, demos, boost starvation, OT/late winner, comeback) are scored for the winning team; the top ones render as cards with an impact meter.',
-  },
-  {
-    term: 'Momentum graph', cat: 'Match analysis',
-    body: 'Field tilt as an exponential moving average plus goal impulses — who controlled which phase of the game. Blue above the line, orange below; dots mark goals.',
-  },
-  {
-    term: 'Field tilt', cat: 'Match analysis',
-    body: 'Share of play spent in each half, measured by ball position over time. 50% = even game.',
-  },
-  {
-    term: 'Kickoff win %', cat: 'Match analysis',
-    body: 'A kickoff is "won" if your team gets the ball into the opponent half (or first meaningful touch advantage). Both the first toucher AND the nearest opponent get graded, so the league average is ~50% by construction (symmetric duel).',
-  },
-  {
-    term: '50/50 win %', cat: 'Match analysis',
-    body: 'Challenges where two players contest the ball at similar distance — won if your team keeps or advances possession. Symmetric: every win is someone\'s loss, league average ~50%.',
-  },
-  {
-    term: 'Rotation map', cat: 'Match analysis',
-    body: 'Average position per role (1st / 2nd / last man, normalized "my goal at the bottom"), circle radius = share of time in that role, arrows sketch the rotation loop.',
-  },
-  {
-    term: 'Playstyle axes', cat: 'Profile',
-    body: 'Six 0–100 axes computed per game and averaged: Attack, Defense, Control (ball security), Speed (tempo/supersonic), Aerial (air presence), Duels (50/50s + kickoffs). They drive the modifier tags and feed the archetype description.',
-  },
-  {
-    term: 'Modifiers (aerial, fast, technical, turnover-prone, strong in duels)', cat: 'Profile',
-    body: 'Threshold tags on the playstyle axes: aerial ≥55, fast = speed ≥62, technical = control ≥65, turnover-prone = control ≤35, strong in duels = duels ≥62.',
-  },
-  {
-    term: 'Chemistry (Teammates tab)', cat: 'Players',
-    body: 'Your win % together with that teammate minus your overall win % in the mode. Positive = you win more with them than usual.',
-  },
-  {
-    term: 'Your rating with', cat: 'Players',
-    body: 'Your average game rating in matches with that teammate, with the delta vs your overall average in brackets.',
-  },
-  {
-    term: 'Smurf detection', cat: 'Players',
-    body: 'Flags accounts whose performance estimate sits far above their account\'s visible rank, with few tracked matches or fresh accounts as supporting signals. The unshrunk per-game estimate (estTierRaw) feeds this.',
-  },
-  {
-    term: 'Favorite players', cat: 'Players',
-    body: 'Star (☆) a player on their profile to save them; they get their own tab on the Players page and a gold ★ everywhere they appear. Stored locally in the database.',
-  },
-  {
-    term: 'Rank sources & caching', cat: 'Players',
-    body: 'Real ranks come from tracker.gg: your own rank refreshes hourly, other players every 30 days (cache is never deleted, TTL only controls refresh). Fetches respect rate limits with cooldowns; "Fetch actual ranks" on a match forces a retry. Estimated ranks (~) come from the GBDT/centroid models instead.',
-  },
-  {
-    term: 'Sessions', cat: 'Matches',
-    body: 'A session = one calendar day of play. The Matches page shows the last three with W/L dots, rating sparkline and a tilt warning when your form drops sharply within the session.',
-  },
-  {
-    term: 'Personal records', cat: 'Profile',
-    body: 'Fastest goal, most goals/saves in a game, best score, best rating, longest win streak, biggest comeback, longest match — each clickable to the match it happened in.',
-  },
-  {
-    term: 'Welcome screen (no server)', cat: 'App',
-    body: 'The interface needs the local tracker server (localhost:7845). If /api/status does not answer — public demo deployment, or the server simply is not running — a landing screen appears instead of the app, with setup steps and a GitHub link. It re-checks every 5 seconds and loads the app automatically once the server comes up.',
-  },
-  {
-    term: 'Updates (↑ button)', cat: 'App',
-    body: 'The server compares its version against GitHub once per session (6 h cache). When a newer version exists, an ↑ vX.Y.Z button appears in the top bar: one click re-runs the installer, the server replaces itself and restarts, and the page reloads on its own. Updates install the tagged release snapshot, never the moving tip of the repo, and nothing ever installs without your click. Current state is always visible on the server status page ("Updates" row, with a manual Check now) — open localhost:7845/server directly; the nav link is shown on dev machines only. Your database is untouched (it lives outside the app folder). Git checkouts update via git pull instead; RL_NO_UPDATE_CHECK=1 disables checking entirely.',
-  },
-  {
-    term: 'Published rank models', cat: 'App',
-    body: 'The GBDT rank models are trained on a large benchmark corpus that regular installs do not have. Trained models are therefore published to GitHub (server/models) and every install checks daily for a newer one, downloads it silently and starts using it — rank estimates improve without any user action. A locally trained model (if you built your own corpus) always wins if it is newer.',
-  },
-];
+/** Display formula block. */
+const F = ({ children }) => <div className="wk-formula">{children}</div>;
+/** Inline math / identifier. */
+const M = ({ children }) => <code className="wk-m">{children}</code>;
 
 // must mirror computeArchetype in server/src/aggregate.js
 const ARCHETYPES = [
   ['Striker', 'Finishes plays: high goals and shots per game with strong conversion.', 'goals/game, shots/game, shooting %'],
   ['Playmaker', 'Creates more than they finish — assists rival goals, high possession and constant touches. 2v2/3v3 only.', 'assists÷goals ratio, possession %, touches/min'],
-  ['Ballchaser', 'First to every ball, low time behind the ball, relentless pressure — not much patience for sitting back.', 'touches/min, LOW % behind ball, double commits (or supersonic in 1v1)'],
+  ['Ballchaser', 'First to every ball, low time behind the ball, relentless pressure.', 'touches/min, LOW % behind ball, double commits (or supersonic in 1v1)'],
   ['Lawnmower', 'Owns the floor: supersonic on the ground, rarely airborne.', '% on ground, % supersonic, LOW aerial touches'],
   ['Aerial ace', 'Lives in the air — aerial touches, high-air time, flip resets.', 'aerial touches/game, % high air, flip resets'],
   ['The Wall', 'The last line: saves, clears, permanent goalside presence.', 'saves/game, % behind ball, clears/game'],
@@ -146,24 +28,329 @@ const ARCHETYPES = [
   ['All-rounder', 'No single dimension dominates — the fallback when no candidate scores ≥ 0.35.', '—'],
 ];
 
+const SECTIONS = [
+  {
+    id: 'data', title: 'Data source and the active clock',
+    body: (
+      <>
+        <p>
+          Every number in the application is computed locally from Rocket League replay files.
+          A replay stores the complete network stream of a match — positions, velocities and
+          rotations of all cars and the ball at roughly 30 frames per second, together with
+          boost, demolition and scoreboard events. The parser
+          (<a href="https://github.com/nickbabcock/rrrocket" target="_blank" rel="noreferrer">rrrocket</a>,
+          built on the boxcars library) converts this stream to JSON; a custom analysis engine
+          then reconstructs the match event by event. Nothing is sampled or estimated from
+          summary statistics — possession, positioning and every shot are derived from the
+          raw frames.
+        </p>
+        <p>
+          Two clocks appear throughout this article. The <i>raw clock</i> is the replay
+          timestamp, which keeps running through kickoff countdowns and goal celebrations.
+          The <i>active clock</i> counts only seconds in which the ball is live. All
+          per-minute rates, goal times, overtime detection and clutch windows use the active
+          clock; the raw clock survives only internally (linking shots to goals within the
+          same stream). Overtime itself is read from the replay's
+          own <M>bOverTime</M> attribute where present, with the active clock
+          (&gt; 305 s) and header duration (&gt; 315 s) as fallbacks.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'xg', title: 'Shot detection and expected goals (xG)',
+    body: (
+      <>
+        <p>
+          A <i>shot</i> is defined kinematically. After every touch the engine projects the
+          ball's trajectory: the touch qualifies as a shot when the ball travels toward the
+          opponent goal (velocity component ≥ 100 uu/s), is fast enough
+          (≥ 500 uu/s, relaxed to ≥ 300 uu/s within 3 000 uu of goal so
+          slow rollers and tap-ins count), and would arrive inside the goal mouth within the
+          allowed flight time (4.5 s, or 6 s for close-range rollers). Airborne
+          trajectories are projected ballistically with gravity
+          (<M>z(t) = z₀ + v_z·t − ½·650·t²</M>); a rolling ball
+          (<M>z &lt; 150, |v_z| &lt; 200</M>) is treated as a two-dimensional problem —
+          applying gravity to a grounded ball would "predict" it falling through the floor,
+          which is precisely the class of ground shots older versions silently discarded.
+          The target test uses the real goal dimensions (half-width 893 uu, height
+          642 uu) with a 90 uu tolerance.
+        </p>
+        <p>
+          Each detected shot receives a <i>raw</i> probability from geometry: the opening
+          angle of the goal as seen from the shot position (the classical two-post
+          angle <M>θ = atan2(2w·|dy|, dy² + x² − w²)</M> with <M>w = 893</M>),
+          shot speed and distance, combined in a logistic model:
+        </p>
+        <F>p_geo = σ( −2.9 + 4.5·(θ/π) + 1.4·(speed/4600) − 2.2·(dist/11000) )</F>
+        <p>
+          The defensive situation then adjusts this value. Opponents standing on the shot
+          corridor (within 320 uu laterally, below 900 uu) act as blockers: one
+          blocker multiplies the probability by 0.62, two or more by 0.45. With no blocker,
+          the distance of the nearest defender to the goal matters: if it exceeds
+          2 400 uu the net is effectively open and the value is floored by
+          distance (0.92 within 2 500 uu, then 0.78 / 0.55 / 0.35); a defender
+          merely out of position (1 200–2 400 uu) scales the value
+          by 1.35.
+        </p>
+        <p>
+          Three corrections operate on whole sequences rather than single touches.
+          <b> Deduplication:</b> consecutive touches by the same player within 2.5 s of
+          the sequence start are one chance, not several shots — the record of the best
+          touch (highest raw value, with its own time and position) represents the sequence.
+          <b> Rebounds:</b> a shot arriving within 1.6 s of a <i>different</i>
+          teammate's shot faces a displaced goalkeeper and is multiplied by 1.3.
+          <b> Calibration:</b> only after both steps is the raw value mapped onto an actual
+          probability by Platt scaling,
+        </p>
+        <F>xG = σ( 0.49 · logit(p_geo) + 0.16 )</F>
+        <p>
+          with coefficients fitted by logistic regression on 1 385 deduplicated shots
+          with known outcomes from the corrected pipeline; on the calibration sample the
+          predicted total equals the actual goal total by construction. The raw value is
+          stored alongside every shot so future refits need no reconstruction. Goals with no
+          detected shot (deflections, own goals) synthesize a chance from the scorer's last
+          touch geometry and pass through the same calibration; an own goal is never
+          credited to the player who scored it — the chance belongs to the benefiting team.
+          Team xG is the sum over the team's shots. Note that this is an
+          <i> on-target</i> xG (xGOT semantics — "would it go in if not saved"), so average
+          conversion is ~45–50%, higher than the broadcast-football xG scale.
+        </p>
+        <p>
+          Derived statistics: <M>finishing = goals − xG</M> (positive = converting
+          more than the chances were worth), <i>big chances</i> (xG ≥ 0.4)
+          and <i>zicers</i> (xG ≥ 0.6) with their conversion rates.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'rating', title: 'Game rating (1–99)',
+    body: (
+      <>
+        <p>
+          The number next to every player in every match is a weighted blend of three
+          layers: <b>lobby performance</b> (55%), <b>absolute production</b> (30%)
+          and <b>match impact</b> (15%). When no absolute baselines exist yet the blend
+          degrades gracefully to 80/20 lobby/impact. Ratings are computed on the fly from
+          stored statistics, so historical matches never need re-importing when the formula
+          improves.
+        </p>
+        <p>
+          <b>Lobby layer.</b> Twenty-seven metrics, grouped into five components
+          (attack 0.28, defense 0.24, possession 0.19, boost 0.13, pressure 0.16 —
+          weights summing to 1), are converted to z-scores against the other players of the
+          same match: <M>z = (v − μ) / max(σ, 0.35·|μ| + 0.6)</M>, clamped
+          to ±2.4, where μ and σ are the lobby mean and population standard deviation.
+          Because the maximum attainable |z| in a lobby of <M>n</M> players
+          is <M>√(n−1)</M>, the aggregated score is rescaled by lobby size so a
+          dominant 1v1 game can reach the same range as a dominant 3v3 game:
+        </p>
+        <F>component = 50 + ( Σwᵢzᵢ / Σwᵢ ) / √(n−1) · 58&nbsp;&nbsp;&nbsp;(58 ≈ 26·√5 keeps the historical 3v3 scale)</F>
+        <p>
+          A clean sheet floors the defense component at 58 — zero saves behind a shutout is
+          not evidence of bad defense. When a team is shorthanded (leaver), the remaining
+          players' possession and touch counts are scaled before comparison.
+        </p>
+        <p>
+          <b>Absolute layer.</b> The same idea against the whole local database for that
+          mode: per-metric means and deviations over all recorded player-games (a metric
+          participates once it has at least 8 samples), z-scores clamped at ±2.4,
+          combined as <M>50 + z̄·26</M>. This is the layer that lets a strong lobby
+          average above 50, as it should.
+        </p>
+        <p>
+          <b>Impact layer.</b> Starts at 50 and adds three terms. The <i>carry</i> term
+          measures the player's share of the team's credited goal involvements — an assist
+          counts as half a goal and the shares of a team sum to exactly 1:
+        </p>
+        <F>share = (goals + 0.5·assists) / (team_goals + 0.5·team_assists),&nbsp;&nbsp;carry = (share − 1/n) · 55</F>
+        <p>
+          In 1v1 the share is identically 1 (the player <i>is</i> the team), so the carry
+          term uses goal difference instead: <M>carry = clamp(6·(GF − GA), ±35)</M>.
+          The denominator uses goals credited on the scoreboard, not the score — an
+          opponent's own goal raises the score without anyone on the team scoring, and must
+          not read as the whole team underperforming. A 0–0 result leaves the term neutral.
+          The <i>result</i> term adds <M>±min(12, 3·margin)</M> for a win or loss,
+          and each <i>clutch</i> goal (scored in overtime, or with the score tied inside
+          the last minute of regulation, both on the active clock) adds 3, capped at 9.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'rank', title: 'Rank estimation',
+    body: (
+      <>
+        <p>
+          Real ranks come from tracker.gg for every player in a match (per platform, with a
+          persistent cache — the user's own rank refreshes hourly, others monthly).
+          Everything else is estimated from performance, in two forms: a per-match estimate
+          and a career model.
+        </p>
+        <p>
+          <b>The career model</b> is a gradient-boosted decision tree ensemble (GBDT)
+          written in dependency-free JavaScript, one model per mode, trained on a corpus of
+          public ballchasing.com replays with known rank buckets. Training targets are the
+          central tiers of the eight buckets (Bronze 2, Silver 5, Gold 8, Platinum 11,
+          Diamond 14, Champion 17, Grand&nbsp;Champion 20, SSL 22); features are the 34
+          per-game statistics of a single player-game. Hyper-parameters: up to 400 trees of
+          depth 5, learning rate 0.06, 32-bin histogram splits, 85% row/column subsampling,
+          early stopping after 30 stale rounds against a 15% validation split. The split is
+          grouped by match (players of one match never straddle the split) and then purged
+          of players who appear in the training half — with a fallback if the purge would
+          leave fewer than 100 validation rows. Every model reports its validation MAE next
+          to the MAE of a constant predictor (the "baseline"), because a model is only as
+          good as its distance from that floor; both are visible on the Server page.
+        </p>
+        <p>
+          Raw predictions inherit the corpus' label semantics (rank at recording time), so
+          they are mapped onto today's tracker.gg scale by a linear correction fitted on
+          players from the user's own matches whose real rank is cached: with at least 8
+          such pairs a slope in [0.6, 1.6] is fitted (only if the predictions have
+          real spread, variance ≥ 0.2² tiers — otherwise offset-only), with 3–7
+          pairs an offset. The published estimate is the calibrated mean of per-game
+          predictions over recent games.
+        </p>
+        <p>
+          <b>The per-match estimate</b> ("Perf. estimate" in the match view) reads one
+          game's statistics against per-bucket benchmark centroids, then shrinks toward the
+          lobby prior — the average known rank of the lobby:
+          <M> 0.45·estimate + 0.55·prior</M>, clamped to prior ± 2.5 tiers. One
+          great game in a Champion lobby therefore cannot read as SSL; the unshrunk value
+          feeds the smurf detector. The "gap to next rank" panel compares the user's recent
+          averages against centroids linearly interpolated between bucket anchors, so the
+          target is the next sub-rank, not the next whole bucket.
+        </p>
+        <p>
+          Trained models ship with the app and are republished to the repository after
+          significant retraining; every installation checks daily and adopts a newer
+          published model automatically. A model trained locally (for users who build their
+          own corpus) wins whenever it is newer; models whose feature list does not match
+          the running code are rejected outright.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'percentiles', title: 'Percentiles and benchmarks',
+    body: (
+      <>
+        <p>
+          A percentile answers "what fraction of the reference population do I beat", with
+          ties given half credit (the midrank convention):
+        </p>
+        <F>pct = ( #below + ½·#equal ) / N · 100</F>
+        <p>
+          The preferred reference population is the benchmark corpus filtered to the user's
+          own rank bucket and mode — used only when at least 200 player-games of exactly
+          that bucket exist, because comparing a Champion against Bronzes would be worse
+          than no comparison. Otherwise the fallback population is the players from the
+          user's own matches (per-player averages, minimum two games, at least four
+          players), with the profiled player excluded from their own pool. For inverted
+          metrics ("less is better": turnovers, demos taken…) the percentile is mirrored.
+        </p>
+        <p>
+          The Ladder page shows how every statistic scales across the eight buckets of the
+          corpus, with sample sizes displayed; buckets below the minimum sample threshold
+          are hidden rather than shown thin.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'archetypes', title: 'Playstyle archetypes',
+    body: (
+      <>
+        <p>
+          The archetype is a descriptive label, not a rating. Nine candidate archetypes are
+          scored from the player's per-game averages; every candidate is a weighted mean of
+          components normalized to [0, 1] by <M>n01(v, lo, hi) = clamp((v − lo)/(hi − lo))</M>,
+          where the ranges [lo, hi] are calibrated per mode against benchmark corpus
+          averages (weights of each candidate sum to 1). The highest-scoring candidate wins
+          if it clears 0.35; otherwise the player is an <i>All-rounder</i>. A second
+          candidate above the threshold appears as "with a hint of…". Playmaker is excluded
+          in 1v1 — there is nobody to assist.
+        </p>
+        <div className="wk-table">
+          {ARCHETYPES.map(([name, desc, signals]) => (
+            <div key={name} className="wk-row">
+              <span className="wk-cell-name">{name}</span>
+              <span className="wk-cell-desc">{desc} {signals !== '—' && <span className="wk-signals">Signals: {signals}.</span>}</span>
+            </div>
+          ))}
+        </div>
+        <p>
+          The six playstyle <i>axes</i> (attack, defense, control, speed, aerial, duels)
+          shown under the archetype are benchmark percentiles of the underlying stats, and
+          the <i>modifiers</i> (aerial, fast, technical, turnover-prone, strong in duels)
+          are threshold flags on the same values.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'coaching', title: 'Coaching analysis',
+    body: (
+      <>
+        <p>
+          The coaching panel scores a fixed set of candidate "leaks" over the last ten
+          matches — 50/50 win rate, turnover balance, boost starvation, kickoffs, goals
+          conceded as last man, double commits and abandoned 2v1s (team modes only), goals
+          conceded while caught upfield, finishing versus xG, and time behind the ball.
+          Each candidate converts its distance from a healthy threshold into a severity
+          score; the highest severities become the "leaks" cards with a concrete piece of
+          advice, topped up with the worst benchmark percentiles not already covered.
+          Severity ordering is heuristic — the panel is a prioritized to-do list, not a
+          measurement.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'app', title: 'Technical notes',
+    body: (
+      <>
+        <p>
+          <b>Local by design.</b> The interface is only a front end; a small server on the
+          user's machine watches the replay folder, analyzes new replays within seconds and
+          keeps everything in a local SQLite database. The server binds
+          to <M>127.0.0.1</M> and uploads nothing. The full list of outbound
+          connections (all downloads) is documented in the repository README.
+        </p>
+        <p>
+          <b>Welcome screen.</b> If <M>/api/status</M> does not answer — the public
+          demo deployment, or the server simply not running — a landing screen appears with
+          setup instructions, re-checking every five seconds and loading the app the moment
+          the server comes up. The public page also probes <M>localhost:7845</M> and
+          offers to open a running local tracker.
+        </p>
+        <p>
+          <b>Updates.</b> The server compares its version against the repository every six
+          hours. When a newer release exists, an ↑ button appears in the top bar; one click
+          re-runs the installer, which downloads the <i>tagged release snapshot</i> (never
+          the moving tip of the repository), rebuilds and restarts — the page reloads
+          itself. Nothing ever installs without that click, the current state is always
+          visible on the server status page (<M>localhost:7845/server</M>), and the
+          check can be disabled with <M>RL_NO_UPDATE_CHECK=1</M>. The database lives
+          outside the application folder and survives every update.
+        </p>
+        <p>
+          <b>Reproducibility.</b> The analysis engine is versioned; changing it triggers a
+          one-time re-analysis of the whole library. A regression suite (rating invariants
+          plus golden-replay snapshots of four real matches) runs in CI on every change, so
+          a formula can only change together with a reviewed diff of its effects.
+        </p>
+      </>
+    ),
+  },
+];
+
 export default function InfoPage() {
   const [q, setQ] = useState('');
   const needle = q.trim().toLowerCase();
   const hit = (...texts) => !needle || texts.some((t) => (t || '').toLowerCase().includes(needle));
-
-  const concepts = useMemo(() => CONCEPTS.filter((c) => hit(c.term, c.body, c.cat)), [needle]);
-  const archs = useMemo(() => ARCHETYPES.filter(([n, d, s]) => hit(n, d, s, 'archetype')), [needle]);
   const stats = useMemo(() => STAT_DEFS.filter((d) => hit(d.label, d.desc, d.math, d.cat, d.key)), [needle]);
-
-  const catGroups = useMemo(() => {
-    const g = new Map();
-    for (const c of concepts) {
-      if (!g.has(c.cat)) g.set(c.cat, []);
-      g.get(c.cat).push(c);
-    }
-    return [...g.entries()];
-  }, [concepts]);
-
   const statCats = useMemo(() => {
     const g = new Map();
     for (const d of stats) {
@@ -174,81 +361,60 @@ export default function InfoPage() {
     return [...g.entries()];
   }, [stats]);
 
-  const total = concepts.length + archs.length + stats.length;
-
   return (
-    <>
-      <h2 className="section-title">Info <Scribble>the wiki</Scribble>
-        <span className="sheet-note">every number on this site, explained · {total} entries{needle ? ' matching' : ''}</span>
-      </h2>
+    <div className="wiki">
+      <h1 className="wk-title">How everything is computed</h1>
+      <p className="wk-lead">
+        This page documents the mathematics and definitions behind every number in
+        RL Stat Tracker: how shots and expected goals are detected and calibrated, how the
+        1–99 rating is assembled, how ranks are estimated and how the reference benchmarks
+        work. It is maintained together with the code — when a formula changes, this text
+        changes in the same release.
+      </p>
 
-      <input
-        className="search-input wiki-search" style={{ width: 340, marginBottom: 22 }}
-        placeholder="Search a term… (e.g. xG, chemistry, GBDT, lawnmower)"
-        value={q} onChange={(e) => setQ(e.target.value)} autoFocus
-      />
+      <div className="wk-toc card">
+        <div className="wk-toc-h">Contents</div>
+        <ol>
+          {SECTIONS.map((s, i) => (
+            <li key={s.id}><a href={`#${s.id}`}>{i + 1}. {s.title}</a></li>
+          ))}
+          <li><a href="#glossary">{SECTIONS.length + 1}. Glossary of statistics</a></li>
+        </ol>
+      </div>
 
-      {total === 0 && <div className="empty"><h3>No entries match "{q}"</h3></div>}
-
-      {catGroups.map(([cat, items]) => (
-        <div key={cat}>
-          <div className="dsection-h" style={{ marginTop: 30 }}>{cat}</div>
-          <div className="info-grid">
-            {items.map((c) => (
-              <div key={c.term} className="card info-card">
-                <div className="info-term">{c.term}</div>
-                <p className="info-body">{c.body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+      {SECTIONS.map((s, i) => (
+        <section key={s.id} id={s.id} className="wk-section">
+          <h2 className="wk-h2"><span className="wk-num">{i + 1}.</span> {s.title}</h2>
+          {s.body}
+        </section>
       ))}
 
-      {archs.length > 0 && (
-        <>
-          <div className="dsection-h" style={{ marginTop: 30 }}>Archetypes</div>
-          <p className="footnote" style={{ marginTop: 0, marginBottom: 12 }}>
-            Computed from your per-game averages: each archetype scores 0–1, where the lower bound of every range is the
-            ballchasing-corpus average FOR YOUR MODE (so a typical player scores ~0, a distinctive profile 0.5+; e.g. 1v1
-            "goals/game" is measured against the 1v1 average of ~3.8, not the 2v2 average of ~1.3). The highest score ≥ 0.35
-            wins; a second one ≥ 0.35 shows as "with a hint of…". Assist-based archetypes are disabled in 1v1.
-            Shown on your profile hero and in the Players tables (≥2 shared games).
-          </p>
-          <div className="info-grid">
-            {archs.map(([name, desc, signals]) => (
-              <div key={name} className="card info-card">
-                <div className="info-term" style={{ color: 'var(--neon)' }}>{name}</div>
-                <p className="info-body">{desc}</p>
-                <p className="info-signals">Signals: {signals}</p>
-              </div>
+      <section id="glossary" className="wk-section">
+        <h2 className="wk-h2"><span className="wk-num">{SECTIONS.length + 1}.</span> Glossary of statistics</h2>
+        <p>
+          Every tracked statistic with its definition and, where useful, the exact rule the
+          engine applies. The glossary is generated from the same definitions the interface
+          uses, so it cannot drift from the app.
+        </p>
+        <input
+          className="search-input wk-search"
+          placeholder="Filter statistics… (e.g. xG, boost, kickoff)"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
+        {statCats.map(([cat, defs]) => (
+          <div key={cat} className="wk-gloss-cat">
+            <h3 className="wk-h3">{cat}</h3>
+            {defs.map((d) => (
+              <p key={d.key} className="wk-gloss-entry">
+                <b>{d.label}.</b> {d.desc}{d.desc?.endsWith('.') ? '' : '.'}
+                {d.math && <span className="wk-signals"> {d.math}.</span>}
+              </p>
             ))}
           </div>
-        </>
-      )}
-
-      {statCats.length > 0 && (
-        <>
-          <div className="dsection-h" style={{ marginTop: 34 }}>Statistics</div>
-          <p className="footnote" style={{ marginTop: 0, marginBottom: 12 }}>
-            The 34 core stats used across the profile sheets, ladder, gap card and the rank models.
-            "Math" is the precise technical definition (thresholds, denominators, aggregation).
-          </p>
-          {statCats.map(([cat, items]) => (
-            <div key={cat}>
-              <div className="sheet-h" style={{ marginTop: 18 }}>{cat}</div>
-              <div className="info-grid">
-                {items.map((d) => (
-                  <div key={d.key} className="card info-card">
-                    <div className="info-term">{d.label}</div>
-                    <p className="info-body">{d.desc}</p>
-                    {d.math && <p className="info-math">{d.math}</p>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </>
-      )}
-    </>
+        ))}
+        {!stats.length && <p className="wk-gloss-entry">No statistic matches "{q}".</p>}
+      </section>
+    </div>
   );
 }
