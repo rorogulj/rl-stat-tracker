@@ -387,6 +387,8 @@ app.get('/api/server', (req, res) => {
     ];
     let perJob = {}, downloaded = 0, failed = 0;
     for (const j of jobs) perJob[j.playlist] = {};
+    // regular installs have no corpus — hide the whole section instead of showing zeros
+    if (!fs.existsSync(manifestPath) && files === 0) throw new Error('no corpus');
     if (fs.existsSync(manifestPath)) {
       const man = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
       downloaded = Object.keys(man.downloaded || {}).length;

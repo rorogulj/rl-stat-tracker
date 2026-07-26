@@ -44,6 +44,39 @@ function UpdateRow() {
   );
 }
 
+const MODEL_SOURCE = { local: 'trained locally', remote: 'auto-downloaded', shipped: 'bundled with the app' };
+
+function GbdtCard({ gbdt }) {
+  return (
+    <div className="card coach-panel">
+      <div className="sheet-h">
+        <span className={`status-dot ${Object.values(gbdt).some((g) => g.training) ? 'busy' : Object.values(gbdt).some((g) => g.trees) ? 'ok' : 'idle'}`} />
+        GBDT rank model
+      </div>
+      {['1', '2', '3'].map((m) => {
+        const g = gbdt[m] || {};
+        return (
+          <div key={m} className="srow" style={{ gridTemplateColumns: '46px 1fr' }}>
+            <span className="slbl">{m}v{m}</span>
+            <span className="sval srv-val">
+              {g.training ? 'training…'
+                : g.trees
+                  ? `${g.trees} trees · ${g.nRows.toLocaleString('en-GB')} rows · val MAE ${g.valMAE} tiers · calibrated on ${g.calibrated} known ranks${MODEL_SOURCE[g.source] ? ` · ${MODEL_SOURCE[g.source]}` : ''}`
+                  : 'no model yet'}
+            </span>
+          </div>
+        );
+      })}
+      <div className="footnote">
+        Pure-JS gradient-boosted trees. Models come bundled with the app and newer published
+        ones are picked up automatically; with your own ballchasing corpus they retrain locally
+        (the newest model wins). Predictions are calibrated to tracker.gg ranks of players
+        from your own matches.
+      </div>
+    </div>
+  );
+}
+
 export default function ServerStatus() {
   const [s, setS] = useState(null);
   const [err, setErr] = useState(false);
@@ -184,33 +217,14 @@ export default function ServerStatus() {
           </div>
 
           {/* GBDT RANK MODEL */}
-          {s.gbdt && (
-            <div className="card coach-panel">
-              <div className="sheet-h">
-                <span className={`status-dot ${Object.values(s.gbdt).some((g) => g.training) ? 'busy' : Object.values(s.gbdt).some((g) => g.trees) ? 'ok' : 'idle'}`} />
-                GBDT rank model
-              </div>
-              {['1', '2', '3'].map((m) => {
-                const g = s.gbdt[m] || {};
-                return (
-                  <div key={m} className="srow" style={{ gridTemplateColumns: '46px 1fr' }}>
-                    <span className="slbl">{m}v{m}</span>
-                    <span className="sval srv-val">
-                      {g.training ? 'training…'
-                        : g.trees
-                          ? `${g.trees} trees · ${g.nRows.toLocaleString('en-GB')} rows · val MAE ${g.valMAE} tiers · calibrated on ${g.calibrated} known ranks`
-                          : 'not trained yet (needs ≥2,000 benchmark rows)'}
-                    </span>
-                  </div>
-                );
-              })}
-              <div className="footnote">
-                Pure-JS gradient-boosted trees trained locally from the ballchasing corpus; predictions are
-                calibrated to tracker.gg ranks of players from your own matches. Retrains automatically when
-                the corpus grows ~5%.
-              </div>
-            </div>
-          )}
+          {s.gbdt && <GbdtCard gbdt={s.gbdt} />}
+        </div>
+      )}
+
+      {/* no corpus (regular installs): the model card still shows, on its own row */}
+      {!dl && s.gbdt && (
+        <div className="srv-grid" style={{ marginTop: 12 }}>
+          <GbdtCard gbdt={s.gbdt} />
         </div>
       )}
 

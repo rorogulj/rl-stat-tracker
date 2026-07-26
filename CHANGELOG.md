@@ -4,6 +4,14 @@ All notable changes to RL Stat Tracker. Versions follow `0.x` while the app is
 in active development; each release is tagged (`v0.1.0`) and picked up by
 installed copies through the in-app update button.
 
+## 0.1.3 — 2026-07-26
+
+- Server tab: the ballchasing corpus download section is now shown only on
+  machines that actually build their own benchmark corpus — regular installs
+  no longer see an empty "0 / 27,200" panel.
+- The GBDT model card is always visible and now says where each model came
+  from (bundled with the app / auto-downloaded / trained locally).
+
 ## 0.1.2 — 2026-07-26
 
 - Server tab now shows an **Updates** row — current version, up-to-date state and
