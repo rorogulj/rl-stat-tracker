@@ -1,0 +1,14 @@
+{
+  "name": "rl-stat-tracker-server",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "import": "node src/cli-import.js"
+  },
+  "dependencies": {
+    "chokidar": "^4.0.3",
+    "express": "^4.21.2"
+  }
+}

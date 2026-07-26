@@ -1,0 +1,15 @@
+node_modules/
+
+# downloaded ballchasing corpus (~27k replays) — the repo only carries the download tool
+benchmark-replays/
+
+# local data: SQLite database, API key (ballchasing.key!), trained GBDT models
+server/data/
+
+# build output (served from client/dist, built with `npm run build`)
+client/dist/
+
+*.log
+
+# incidental screenshots
+zen_*.png

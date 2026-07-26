@@ -1,0 +1,13 @@
+{
+  "name": "rl-stat-tracker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "setup": "cd server && npm install && cd ../client && npm install && npm run build",
+    "start": "cd server && node src/index.js --open",
+    "import": "cd server && node src/cli-import.js",
+    "build": "cd client && npm run build",
+    "benchmark:download": "node tools/benchmark-download.mjs",
+    "publish-models": "node tools/publish-models.mjs"
+  }
+}
