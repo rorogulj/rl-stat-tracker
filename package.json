@@ -1,6 +1,6 @@
 {
   "name": "rl-stat-tracker",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "scripts": {
     "setup": "node tools/fetch-rrrocket.mjs && cd server && npm install && cd ../client && npm install && npm run build",

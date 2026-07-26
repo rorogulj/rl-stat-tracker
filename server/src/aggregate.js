@@ -559,6 +559,7 @@ function matchList(playerKeyOrKeys, mode) {
  * also update the /info page (client/src/pages/InfoPage.jsx).
  */
 function computeArchetype(statsList, mode) {
+  mode = mode ? Number(mode) : null; // callers pass the query-string value — strict compares below need a number
   const A = (f) => avg(statsList.map((s) => { try { return f(s) || 0; } catch { return 0; } }));
   const n01 = (v, lo, hi) => Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
   const inv01 = (v, lo, hi) => 1 - n01(v, lo, hi);

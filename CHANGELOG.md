@@ -4,6 +4,14 @@ All notable changes to RL Stat Tracker. Versions follow `0.x` while the app is
 in active development; each release is tagged (`v0.1.0`) and picked up by
 installed copies through the in-app update button.
 
+## 0.1.5 — 2026-07-26
+
+- Added the MIT license.
+- Fixed: archetype calibration now respects the selected mode on the profile
+  (1v1 profiles were scored against 2v2 ranges due to a string/number mismatch).
+- Fixed: parser download no longer breaks on Windows user names containing
+  an apostrophe.
+
 ## 0.1.4 — 2026-07-26
 
 - The Server nav link is shown on dev machines only; regular installs can still

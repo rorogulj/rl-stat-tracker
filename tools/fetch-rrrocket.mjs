@@ -38,8 +38,9 @@ const tmpZip = path.join(TOOLS, 'rrrocket-tmp.zip');
 const tmpDir = path.join(TOOLS, 'rrrocket-tmp');
 fs.writeFileSync(tmpZip, buf);
 fs.rmSync(tmpDir, { recursive: true, force: true });
+const psq = (s) => s.replace(/'/g, "''"); // single-quote escaping (paths can contain apostrophes)
 execFileSync('powershell.exe', ['-NoProfile', '-Command',
-  `Expand-Archive -LiteralPath '${tmpZip}' -DestinationPath '${tmpDir}' -Force`]);
+  `Expand-Archive -LiteralPath '${psq(tmpZip)}' -DestinationPath '${psq(tmpDir)}' -Force`]);
 const found = fs.readdirSync(tmpDir, { recursive: true }).find((f) => String(f).endsWith('rrrocket.exe'));
 if (!found) {
   console.error('rrrocket.exe not found in the archive');
