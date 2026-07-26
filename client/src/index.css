@@ -1394,3 +1394,6 @@ table.cmp.opp-table { width: 100%; }
 
 .match-card.draw .edge { background: var(--gold, #ffd166); }
 .draw .match-result-tag { color: var(--gold, #ffd166); }
+
+.w-dot.ok { background: var(--neon); animation: none; }
+.w-btn.sm { padding: 6px 16px; font-size: 12px; margin-left: 4px; }

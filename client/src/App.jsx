@@ -161,7 +161,7 @@ export default function App() {
         </nav>
         <PlayerSearch />
         <ModeFilter mode={mode ?? ''} onChange={setMode} />
-        {upd?.available && (
+        {upd?.available && !upd.dev && (
           <button className="update-btn" onClick={doUpdate} title={`Update to v${upd.latest} (current v${upd.current})`}>
             ↑ v{upd.latest}
           </button>

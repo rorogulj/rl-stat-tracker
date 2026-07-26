@@ -26,8 +26,14 @@ function CopyBtn({ text }) {
   );
 }
 
+const LOCAL = 'http://localhost:7845';
+// on the public (Vercel) copy of this page, "/api/status" can never answer — the
+// tracker lives on the visitor's machine, so we probe localhost too
+const isRemote = typeof window !== 'undefined' && window.location.port !== '7845';
+
 export default function Welcome({ onUp }) {
   const [tries, setTries] = useState(0);
+  const [localUp, setLocalUp] = useState(false);
 
   const ping = async () => {
     try {
@@ -35,9 +41,16 @@ export default function Welcome({ onUp }) {
       if (!r.ok) throw new Error();
       await r.json(); // static hosts may answer 200 with HTML — must parse as JSON
       onUp();
-    } catch {
-      setTries((t) => t + 1);
+      return;
+    } catch { /* same-origin server not there */ }
+    if (isRemote) {
+      try {
+        const r = await fetch(`${LOCAL}/api/status`);
+        if (r.ok) { await r.json(); setLocalUp(true); return; }
+      } catch { /* no local tracker (or old version without CORS) */ }
     }
+    setLocalUp(false);
+    setTries((t) => t + 1);
   };
 
   useEffect(() => {
@@ -62,11 +75,19 @@ export default function Welcome({ onUp }) {
           anywhere.
         </p>
 
-        <div className="w-status">
-          <span className="w-dot" />
-          No tracker server found at <code>:7845</code> — retrying automatically
-          {tries > 0 ? ` (${tries}×)` : ''}
-        </div>
+        {localUp ? (
+          <div className="w-status up">
+            <span className="w-dot ok" />
+            Your tracker is running on this machine —{' '}
+            <a className="w-btn primary sm" href={LOCAL}>Open it ↗</a>
+          </div>
+        ) : (
+          <div className="w-status">
+            <span className="w-dot" />
+            No tracker server found at <code>:7845</code> — retrying automatically
+            {tries > 0 ? ` (${tries}×)` : ''}
+          </div>
+        )}
 
         <div className="w-install">
           <div className="w-install-label">

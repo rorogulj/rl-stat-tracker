@@ -4,6 +4,15 @@ All notable changes to RL Stat Tracker. Versions follow `0.x` while the app is
 in active development; each release is tagged (`v0.1.0`) and picked up by
 installed copies through the in-app update button.
 
+## 0.3.4 — 2026-07-26
+
+- The public welcome page now detects a tracker running on YOUR machine and
+  offers "Open it" — visiting rl-stat-tracker.vercel.app with the tracker
+  installed takes you straight to your local app (the local server exposes
+  its status to exactly that origin, nothing else).
+- Dev checkouts no longer show the update button (it refused to run there
+  by design — update a checkout with git pull).
+
 ## 0.3.3 — 2026-07-26
 
 The xG accuracy release (third independent review, verified numerically).

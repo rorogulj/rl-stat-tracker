@@ -26,6 +26,16 @@ const LOG_BUF = [];
 }
 
 // ---------- API ----------
+// the public welcome page (Vercel) pings the LOCAL server to offer "open your
+// tracker" — allow exactly that origin to read /api/status, nothing else
+const WELCOME_ORIGIN = 'https://rl-stat-tracker.vercel.app';
+app.get('/api/status', (req, res, next) => {
+  if (req.headers.origin === WELCOME_ORIGIN) {
+    res.setHeader('Access-Control-Allow-Origin', WELCOME_ORIGIN);
+  }
+  next();
+});
+
 app.get('/api/status', (req, res) => {
   let bench = null;
   try {
