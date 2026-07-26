@@ -1,4 +1,4 @@
-// Geometry of the standard RL arena (Soccar) in uu — shared by the 2D and 3D views.
+// Geometry of the standard RL arena (Soccar) in uu — shared by the 2D views.
 export const FIELD = {
   X: 4096, Y: 5120, Z: 2044,
   CORNER: 1152,               // 45° beveled corners

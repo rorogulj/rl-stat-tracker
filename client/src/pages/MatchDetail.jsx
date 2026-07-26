@@ -10,7 +10,6 @@ import Scribble from '../components/Scribble.jsx';
 import FieldHeatmap from '../components/FieldHeatmap.jsx';
 import ShotMap from '../components/ShotMap.jsx';
 import ReplayViewer from '../components/ReplayViewer.jsx';
-import Replay3D from '../components/Replay3D.jsx';
 import RankBadge from '../components/RankBadge.jsx';
 import CountUp from '../components/CountUp.jsx';
 import Reveal from '../components/Reveal.jsx';
@@ -176,7 +175,6 @@ export default function MatchDetail() {
   const [ranks, setRanks] = useState(null);
   const [ranksLoading, setRanksLoading] = useState(false);
   const [fetchMsg, setFetchMsg] = useState(null);
-  const [view3d, setView3d] = useState(true);
   const [active, setActive] = useState('overview');
   const [myProf, setMyProf] = useState(null); // my average in this mode, for Key stats
   const [rendering, setRendering] = useState(null); // 'full' | 'mobile' | null — PNG export in progress
@@ -555,15 +553,7 @@ export default function MatchDetail() {
           <SectionHead id="replay" title="Replay" />
           <Reveal>
             <div className="card">
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
-                <div className="mode-filter">
-                  <button className={`mf ${view3d ? 'active' : ''}`} onClick={() => setView3d(true)}>3D</button>
-                  <button className={`mf ${!view3d ? 'active' : ''}`} onClick={() => setView3d(false)}>2D</button>
-                </div>
-              </div>
-              {view3d
-                ? <Replay3D matchId={m.id} goals={m.meta?.goals || []} myTeam={myTeam} myKey={m.me} />
-                : <ReplayViewer matchId={m.id} goals={m.meta?.goals || []} myTeam={myTeam} />}
+              <ReplayViewer matchId={m.id} goals={m.meta?.goals || []} myTeam={myTeam} />
             </div>
           </Reveal>
         </div>

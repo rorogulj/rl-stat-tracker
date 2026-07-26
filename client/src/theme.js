@@ -1,7 +1,7 @@
 /**
  * Central palette for charts and canvas/WebGL views (Orbis skin).
  * INVARIANT: TEAM_BLUE/TEAM_ORANGE = --blue/--orange in index.css,
- * hex-int in Replay3D.jsx and RGB triplets in field.js/ShotMap.jsx.
+ * RGB triplets in field.js/ShotMap.jsx.
  */
 export const NAVY = '#010828';
 export const PANEL = '#071033';

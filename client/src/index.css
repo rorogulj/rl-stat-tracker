@@ -1,6 +1,6 @@
 :root {
   /* Orbis skin: deep navy + cream + neon. Team --blue/--orange are an invariant
-     (same values in theme.js, Replay3D hex-int and field.js triplets). */
+     (same values in theme.js and field.js/ShotMap.jsx triplets). */
   --bg: #010828;
   --bg2: #030b2e;
   --panel-solid: #071033; /* opaque: tooltips, modals, dropdowns, canvas backgrounds */

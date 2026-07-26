@@ -4,6 +4,12 @@ All notable changes to RL Stat Tracker. Versions follow `0.x` while the app is
 in active development; each release is tagged (`v0.1.0`) and picked up by
 installed copies through the in-app update button.
 
+## 0.3.7 — 2026-07-26
+
+- Removed the 3D replay viewer — the 2D top-down view is the analytical one and
+  the in-game replay covers "how it looked". The app loads noticeably faster
+  (a third of the code weight gone with the 3D engine).
+
 ## 0.3.6 — 2026-07-26
 
 - The public site has a **live demo**: a "Try the demo" button loads the full
