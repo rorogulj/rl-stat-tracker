@@ -4,6 +4,11 @@ All notable changes to RL Stat Tracker. Versions follow `0.x` while the app is
 in active development; each release is tagged (`v0.1.0`) and picked up by
 installed copies through the in-app update button.
 
+## 0.2.1 — 2026-07-26
+
+- Server page: benchmark re-analysis progress is now a visible row with its own
+  progress bar ("Analyzed X / Y replays") instead of a footnote.
+
 ## 0.2.0 — 2026-07-26
 
 Analytics correctness release. An independent review of the stat engine was

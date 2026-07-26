@@ -185,6 +185,21 @@ export default function ServerStatus() {
             <div className="loading-bar" style={{ margin: '8px 0 14px' }}>
               <div className="fill" style={{ width: `${Math.min(100, (dl.downloaded / dl.target) * 100)}%` }} />
             </div>
+            {bi && (
+              <>
+                <div className="srow" style={{ gridTemplateColumns: '150px 1fr' }}>
+                  <span className="slbl">Analyzed</span>
+                  <span className="sval srv-val">
+                    {bi.matches.toLocaleString('en-GB')} / {dl.files.toLocaleString('en-GB')} replays in the database
+                    {bi.running ? ` · analyzing now (${bi.pending.toLocaleString('en-GB')} in this round)` :
+                      bi.matches < dl.files ? ' · next round within 10 min' : ' · all analyzed ✓'}
+                  </span>
+                </div>
+                <div className="loading-bar" style={{ margin: '8px 0 14px' }}>
+                  <div className="fill" style={{ width: `${Math.min(100, (bi.matches / Math.max(1, dl.files)) * 100)}%` }} />
+                </div>
+              </>
+            )}
             {(dl.jobs || []).map((job) => (
               <div key={job.playlist} style={{ marginBottom: 12 }}>
                 <div className="rank-cap" style={{ marginBottom: 6 }}>
