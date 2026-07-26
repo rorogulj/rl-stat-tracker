@@ -1,5 +1,5 @@
 {
-  "publishedAt": "2026-07-26T12:40:14.703Z",
+  "publishedAt": "2026-07-26T12:40:46.722Z",
   "models": {
     "1": {
       "trainedAt": "2026-07-26T12:40:12.709Z",
@@ -9,18 +9,18 @@
       "trees": 68
     },
     "2": {
-      "trainedAt": "2026-07-26T12:20:26.226Z",
-      "valMAE": 5.53,
-      "baseMAE": 6.19,
-      "nRows": 10322,
-      "trees": 51
+      "trainedAt": "2026-07-26T12:40:15.592Z",
+      "valMAE": 4.25,
+      "baseMAE": 4.47,
+      "nRows": 24325,
+      "trees": 33
     },
     "3": {
-      "trainedAt": "2026-07-26T12:20:28.817Z",
-      "valMAE": 2.37,
-      "baseMAE": 4,
-      "nRows": 2689,
-      "trees": 87
+      "trainedAt": "2026-07-26T12:40:17.499Z",
+      "valMAE": 2.07,
+      "baseMAE": 4.9,
+      "nRows": 7529,
+      "trees": 239
     }
   }
 }
