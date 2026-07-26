@@ -4,6 +4,12 @@ All notable changes to RL Stat Tracker. Versions follow `0.x` while the app is
 in active development; each release is tagged (`v0.1.0`) and picked up by
 installed copies through the in-app update button.
 
+## 0.1.6 — 2026-07-26
+
+- Playstyle and coaching texts are now mode-aware: 1v1 profiles no longer get
+  teammate/rotation advice ("someone has to rotate back", "coordinate cheats
+  in 2v2") that only makes sense in team modes.
+
 ## 0.1.5 — 2026-07-26
 
 - Added the MIT license.

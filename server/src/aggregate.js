@@ -974,7 +974,9 @@ function buildCoaching(games, mode) {
   add((a((s) => s.boost.pctZero) - 22) * 3, 'Boost economy', `At 0 boost ${r1(a((s) => s.boost.pctZero))}% of the time`,
     'Rotate over small pads (12 boost is often enough) instead of chasing big pads. Keep a 30+ reserve for defense.');
   if (koPct != null) add((45 - koPct) * 2.5, 'Kickoffs', `Winning ${r1(koPct)}% of kickoffs`,
-    'Learn the speed flip; grab the small pad in front at spawn; coordinate cheats in 2v2.');
+    isTeamMode
+      ? 'Learn the speed flip; grab the small pad in front at spawn; coordinate cheats in 2v2.'
+      : 'Learn the speed flip; grab the small pad in front at spawn; in 1v1 a safe, consistent kickoff beats a risky fast one.');
   add((a((s) => s.possession.concededAsLastMan) - 0.7) * 40, 'Last line of defense', `${r1(a((s) => s.possession.concededAsLastMan))} goals conceded per game as last man`,
     'As last man, do not challenge balls you cannot reach first — hold shadow defense positioning.');
   if (isTeamMode) add((a((s) => s.positioning.doubleCommits || 0) - 2.5) * 15, 'Double commits', `${r1(a((s) => s.positioning.doubleCommits || 0))} double commits per game`,

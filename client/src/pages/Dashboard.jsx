@@ -44,13 +44,21 @@ function RadarTick({ payload, x, y, cx, cy, textAnchor, avg }) {
 const ord = (n) => n + (n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th');
 
 // archetype and modifier explanations (from the playstyle axes)
+// each entry: (axes, solo) => text — `solo` is true on a 1v1 profile, where
+// teammate/rotation phrasing would make no sense
 const ARCH_DESC = {
-  Striker: () => 'You finish plays. High shot volume and conversion — the ball ends up in the net when it reaches you. Just don\'t forget someone has to rotate back.',
+  Striker: (ax, solo) => solo
+    ? 'You finish plays. High shot volume and conversion — the ball ends up in the net when it reaches you. Just don\'t get caught ball-watching after the shot: in 1v1 the counter comes straight back.'
+    : 'You finish plays. High shot volume and conversion — the ball ends up in the net when it reaches you. Just don\'t forget someone has to rotate back.',
   Playmaker: () => 'You create more than you finish — high possession, constant touches and assists that set your teammate up. The offense runs through you.',
-  Ballchaser: () => 'You live on the ball side of the field — first to every ball, relentless pressure, not much patience for sitting back. Opponents feel hunted; your teammate sometimes too.',
+  Ballchaser: (ax, solo) => solo
+    ? 'You live on the ball side of the field — first to every ball, relentless pressure, not much patience for sitting back. It wins you tempo, but a missed challenge leaves your net wide open.'
+    : 'You live on the ball side of the field — first to every ball, relentless pressure, not much patience for sitting back. Opponents feel hunted; your teammate sometimes too.',
   Lawnmower: () => 'You own the floor — supersonic on the ground, cutting across the field, rarely leaving the deck. What you lack in air presence you make up in constant ground threat.',
   'Aerial ace': () => 'The air is your territory — aerial touches, high-air time and mechanics most players don\'t attempt. You attack angles others can\'t reach.',
-  'The Wall': () => 'Nothing gets past you cheaply — saves, clears and a permanent goalside presence. Teams win games off the chances you deny.',
+  'The Wall': (ax, solo) => solo
+    ? 'Nothing gets past you cheaply — saves, clears and a permanent goalside presence. You win games off the chances you deny; just make sure you also cash in on the other end.'
+    : 'Nothing gets past you cheaply — saves, clears and a permanent goalside presence. Teams win games off the chances you deny.',
   'Demo merchant': () => 'You play the man as much as the ball — demos and bumps break the opponent\'s structure and tilt lobbies. Chaos is a strategy.',
   'Boost scavenger': () => 'You starve opponents — stealing their big pads, picking their pockets and winning the resource war before the ball war.',
   'Kickoff bully': () => 'You win games in the first three seconds — kickoff after kickoff goes your way, and every restart is a chance to take the lead.',
@@ -460,7 +468,7 @@ export default function Dashboard({ mode = '', playerKey = null }) {
             <div className="card coach-panel">
               <div className="sheet-h">Playstyle — {p.style.archetype}</div>
               <p style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--text-2)', marginBottom: 12 }}>
-                {(ARCH_DESC[p.style.archetype] || ARCH_DESC['Balanced player'])(p.style.axes)}
+                {(ARCH_DESC[p.style.archetype] || ARCH_DESC['Balanced player'])(p.style.axes, mode === '1')}
               </p>
               <div className="style-axes" style={{ marginBottom: 12 }}>
                 {Object.entries(AXIS_LABELS).map(([k, label]) => (
