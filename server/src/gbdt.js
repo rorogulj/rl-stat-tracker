@@ -124,18 +124,25 @@ function rng(seed) {
 /** Asynchronous training (yields between trees so the API stays responsive). */
 async function trainMode(mode) {
   const { getBenchStats, SHEET_STATS, BUCKET_TIERS } = require('./aggregate');
-  const rows = getBenchStats(mode);
+  // rows with an unknown bucket carry no usable label — drop them instead of
+  // silently defaulting to some middle tier
+  const rows = getBenchStats(mode).filter((r) => BUCKET_TIERS[r.bucket] != null);
   if (rows.length < 2000) return null;
 
   const m = SHEET_STATS.length;
   const X = rows.map((r) => featuresOf(r.stats));
-  const y = Float64Array.from(rows, (r) => BUCKET_TIERS[r.bucket] ?? 11);
+  const y = Float64Array.from(rows, (r) => BUCKET_TIERS[r.bucket]);
 
   // split by MATCH (players of the same match share context → must not leak into val)
   const midHash = (s) => { let h = 0; for (let i = 0; i < (s || '').length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
   const isVal = rows.map((r) => (midHash(r.mid) % 1000) / 1000 < PARAMS.valFrac);
-  const trainIdx = [], valIdx = [];
-  isVal.forEach((v, i) => (v ? valIdx : trainIdx).push(i));
+  const trainIdx = [], valIdx0 = [];
+  isVal.forEach((v, i) => (v ? valIdx0 : trainIdx).push(i));
+  // purge val rows whose PLAYER also appears in train — ~half the corpus rows come
+  // from players seen in more than one match, and identity leakage across the split
+  // makes val MAE optimistic
+  const trainPlayers = new Set(trainIdx.map((i) => rows[i].playerKey).filter(Boolean));
+  const valIdx = valIdx0.filter((i) => !rows[i].playerKey || !trainPlayers.has(rows[i].playerKey));
 
   // binning on the train split
   const edgesPerF = [];
@@ -173,23 +180,25 @@ async function trainMode(mode) {
   trees.length = bestIter + 1;
 
   // final metrics on the val set (with the truncated ensemble)
-  let mae = 0;
+  let mae = 0, baseMae = 0;
   for (const i of valIdx) {
     let pv = base;
     for (const tr of trees) pv += predictTreeBinned(tr, cols, i);
     mae += Math.abs(y[i] - pv);
+    baseMae += Math.abs(y[i] - base); // constant predictor (train mean) — the honesty floor
   }
   mae /= Math.max(1, valIdx.length);
+  baseMae /= Math.max(1, valIdx.length);
 
   const model = {
     version: MODEL_VERSION, mode: Number(mode), nRows: rows.length,
     trainedAt: new Date().toISOString(),
     features: SHEET_STATS.map(([k]) => k),
-    base, trees, valMAE: Math.round(mae * 100) / 100, valN: valIdx.length,
+    base, trees, valMAE: Math.round(mae * 100) / 100, baseMAE: Math.round(baseMae * 100) / 100, valN: valIdx.length,
   };
   fs.writeFileSync(modelPath(mode), JSON.stringify(model));
   modelCache.set(Number(mode), model);
-  console.log(`[gbdt] mode ${mode}: trained ${trees.length} trees on ${trainIdx.length} rows — val MAE ${model.valMAE} tiers (n=${valIdx.length})`);
+  console.log(`[gbdt] mode ${mode}: trained ${trees.length} trees on ${trainIdx.length} rows — val MAE ${model.valMAE} vs baseline ${model.baseMAE} tiers (n=${valIdx.length}, player-clean val)`);
   return model;
 }
 
@@ -203,10 +212,15 @@ function loadModel(mode) {
     [path.join(SHIPPED_DIR, `gbdt-rank-${key}.json`), 'shipped'],
   ];
   let model = null;
+  const featureKeys = require('./aggregate').SHEET_STATS.map(([k]) => k);
   for (const [p, source] of candidates) {
     try {
       const raw = JSON.parse(fs.readFileSync(p, 'utf8'));
       if (raw.version !== MODEL_VERSION) continue;
+      // a model trained against a different feature list/order would silently read
+      // the wrong stat at every tree split — reject instead
+      if (!Array.isArray(raw.features) || raw.features.length !== featureKeys.length
+        || raw.features.some((k, i) => k !== featureKeys[i])) continue;
       if (!model || Date.parse(raw.trainedAt || 0) > Date.parse(model.trainedAt || 0)) {
         model = raw;
         model.source = source;
@@ -352,7 +366,7 @@ function info() {
     const m = loadModel(mode);
     const cal = m ? calibration(mode) : null;
     out[mode] = m ? {
-      trees: m.trees.length, nRows: m.nRows, valMAE: m.valMAE,
+      trees: m.trees.length, nRows: m.nRows, valMAE: m.valMAE, baseMAE: m.baseMAE ?? null,
       trainedAt: m.trainedAt, source: m.source, calibrated: cal ? cal.n : 0, training: training.has(mode),
     } : { training: training.has(mode) };
   }

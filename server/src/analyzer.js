@@ -16,7 +16,11 @@ const HEIGHT = { GROUND: 120, HIGH_AIR: 840 };
 const TOUCH = { DV: 500, RADIUS: 360, COOLDOWN: 0.35 };
 const GOAL = { HALF_W: 893, HEIGHT: 642, Y: 5120, GRAVITY: 650 };
 const CHALLENGE_WINDOW = 1.5; // s — quick alternating touches = 50/50 duel
-const ANALYZER_VERSION = 14;
+const ANALYZER_VERSION = 15;
+
+// the six 100-boost pad locations (standard soccar maps)
+const BIG_PADS = [[3072, 4096], [-3072, 4096], [3072, -4096], [-3072, -4096], [3584, 0], [-3584, 0]];
+const nearBigPad = (pos) => BIG_PADS.some(([px, py]) => Math.hypot(pos.x - px, pos.y - py) < 350);
 
 const MAP_NAMES = {
   Stadium_P: 'DFH Stadium', Stadium_Winter_P: 'DFH Stadium (Snowy)', Stadium_Day_P: 'DFH Stadium (Day)',
@@ -233,11 +237,17 @@ function analyze(data, fileName) {
       }
     }
 
-    // deleted actors (demolitions, leavers)
+    // deleted actors (demolitions, leavers) — also purge the boost bookkeeping:
+    // actor ids are recycled, and a stale boostAmount entry would diff the new
+    // car's respawn 33% against the old car's last value (phantom pads/usage)
     for (const del of f.deleted_actors || []) {
       carActors.delete(del);
       ballActors.delete(del);
       handbrakeOn.delete(del);
+      boostAmount.delete(del);
+      carToPri.delete(del);
+      boostToCar.delete(del);
+      for (const [bid, cid] of boostToCar) if (cid === del) boostToCar.delete(bid);
     }
 
     // updated attributes
@@ -317,7 +327,9 @@ function analyze(data, fileName) {
             pl.stats.boost.collected += diff;
             const ySigned = car ? car.pos.y * (pl.team === 0 ? 1 : -1) : 0;
             const stolen = ySigned > 0;
-            if (pct >= 99.5 && diff > 30) {
+            // big pad detection: a big pad always fills to 100, so the delta alone
+            // misses pickups taken above ~70% boost — the position check catches those
+            if (pct >= 99.5 && (diff > 30 || (car && nearBigPad(car.pos)))) {
               pl.stats.boost.bigPads++;
               pl.stats.boost.overfill += prev; // a big pad always gives 100 — the excess is wasted
               if (stolen) { pl.stats.boost.bigPadsStolen++; pl.stats.boost.stolenAmount += diff; }
@@ -498,6 +510,8 @@ function analyze(data, fileName) {
     // goal in this frame: who on the conceding team was the last man + close the duel
     const goalNow = goalByFrame.get(fi);
     if (goalNow) {
+      // active game clock (no countdowns/celebrations) — raw g.time stays for shot matching
+      goalNow.timeActive = Math.round(activeTime * 10) / 10;
       if (openChallenge) { resolveChallenge(openChallenge); openChallenge = null; }
       const concedingTeam = goalNow.team === 0 ? 1 : 0;
       const sign = concedingTeam === 0 ? 1 : -1;
@@ -702,16 +716,39 @@ function analyze(data, fileName) {
     };
   });
 
-  // rebound: shot shortly after a previous shot by the same team → keeper pulled out of position
+  // dedup: consecutive touches by the SAME player within one attacking sequence are
+  // one chance, not many shots — keep a single record (latest position, best raw xG)
+  {
+    const deduped = [];
+    const lastByKey = new Map(); // player key -> index into deduped
+    for (const sh of shots) {
+      const prevIdx = lastByKey.get(sh.key);
+      const prev = prevIdx != null ? deduped[prevIdx] : null;
+      if (prev && sh.t - prev.t < 2.5) {
+        deduped[prevIdx] = { ...sh, xg: Math.max(prev.xg, sh.xg) };
+      } else {
+        lastByKey.set(sh.key, deduped.length);
+        deduped.push(sh);
+      }
+    }
+    shots.length = 0;
+    shots.push(...deduped);
+  }
+
+  // rebound: shot shortly after a DIFFERENT teammate's shot → keeper pulled out of
+  // position; applied on raw xG (before calibration)
   for (let i = 0; i < shots.length; i++) {
     for (let j = i - 1; j >= 0; j--) {
       if (shots[i].t - shots[j].t > 1.6) break;
-      if (shots[j].team === shots[i].team) {
-        shots[i].xg = Math.min(0.96, r2(shots[i].xg * 1.3));
+      if (shots[j].team === shots[i].team && shots[j].key !== shots[i].key) {
+        shots[i].xg = shots[i].xg * 1.3;
         break;
       }
     }
   }
+
+  // calibrate every detected shot exactly once
+  for (const sh of shots) sh.xg = r2(calibrateXg(sh.xg));
 
   // ---------- xG: link shots to goals ----------
   for (const g of goals) {
@@ -725,7 +762,10 @@ function analyze(data, fileName) {
     if (matched) { matched.goal = true; }
     else {
       // goal without a detected shot (tap-in, owngoal deflection...) — synthesize from the scorer's last touch
-      const scorer = [...players.values()].find((p2) => p2.name === g.player);
+      let scorer = [...players.values()].find((p2) => p2.name === g.player);
+      // own goal: the header names the player who put it in their OWN net — the chance
+      // belongs to the benefiting team, never to the own-goaler's xG
+      if (scorer && scorer.team != null && scorer.team !== g.team) scorer = null;
       const lastT = [...touchLog].reverse().find((tc) => tc.time < g.time + 0.3 && scorer && tc.playerKey === scorer.key);
       // xG from the geometry of the last touch (tap-in from 1 m ≈ 0.85, not a fixed 0.35)
       const sx = lastT ? lastT.pos.x : 0;
@@ -912,7 +952,9 @@ function analyze(data, fileName) {
   const dateIso = dateRaw.replace(/^(\d{4}-\d{2}-\d{2}) (\d{2})-(\d{2})-(\d{2})$/, '$1T$2:$3:$4');
 
   const t0 = P('Team0Score') || 0, t1 = P('Team1Score') || 0;
-  const lastGoalTime = goals.length ? Math.max(...goals.map((g) => g.time)) : 0;
+  // overtime = a goal past regulation on the ACTIVE clock (raw replay time includes
+  // kickoff countdowns and celebrations, which used to flag late regulation goals as OT)
+  const lastGoalActive = goals.length ? Math.max(...goals.map((g) => g.timeActive ?? g.time)) : 0;
 
   return {
     id: P('MatchGUID') || P('Id') || fileName,
@@ -925,7 +967,7 @@ function analyze(data, fileName) {
     date: dateIso,
     duration: r1(activeTime),
     totalSeconds: P('TotalSecondsPlayed') || 0,
-    overtime: lastGoalTime > 302 || (P('TotalSecondsPlayed') || 0) > 315,
+    overtime: lastGoalActive > 300.5 || (P('TotalSecondsPlayed') || 0) > 315,
     team0Score: t0, team1Score: t1,
     goals,
     demoEvents,
@@ -936,9 +978,11 @@ function analyze(data, fileName) {
       pct0: pct(teamPossession[0], teamPossession[0] + teamPossession[1] || 1),
       pct1: pct(teamPossession[1], teamPossession[0] + teamPossession[1] || 1),
     },
+    // aggregated from the shots themselves (by the SHOT's team) — player totals would
+    // miscredit own goals and drop unattributed synthetic chances
     teamXg: {
-      0: r2(outPlayers.filter((p2) => p2.team === 0).reduce((a, p2) => a + p2.xg.total, 0)),
-      1: r2(outPlayers.filter((p2) => p2.team === 1).reduce((a, p2) => a + p2.xg.total, 0)),
+      0: r2(shots.filter((sh) => sh.team === 0).reduce((a, sh) => a + sh.xg, 0)),
+      1: r2(shots.filter((sh) => sh.team === 1).reduce((a, sh) => a + sh.xg, 0)),
     },
     players: outPlayers,
     timeline: finalizeTimeline(tlSamples, outPlayers),
@@ -965,7 +1009,7 @@ function detectShot(pl, pos, vel, t, opps = []) {
   const zAtGoal = pos.z + vel.z * tGoal - 0.5 * GOAL.GRAVITY * tGoal * tGoal;
   if (Math.abs(xAtGoal) > GOAL.HALF_W + 90 || zAtGoal > GOAL.HEIGHT + 90 || zAtGoal < -60) return null;
 
-  // base xG: goal opening angle + speed + distance
+  // base xG (RAW — Platt calibration happens later, after dedup + rebound adjustments)
   const theta = Math.abs(Math.atan2(2 * GOAL.HALF_W * Math.abs(dy), dy * dy + pos.x * pos.x - GOAL.HALF_W * GOAL.HALF_W));
   const thetaN = theta / Math.PI;
   let xg = sigmoid(-2.9 + 4.5 * thetaN + 1.4 * (speed / 4600) - 2.2 * (dist / 11000));
@@ -997,13 +1041,19 @@ function detectShot(pl, pos, vel, t, opps = []) {
     xg *= 0.62;
   }
 
-  // Platt recalibration — coefficients fitted on real shot outcomes from the database
-  // (562 shots; after it the predicted probability ≈ actual conversion per bucket)
-  const cl = Math.min(0.95, Math.max(0.03, xg));
-  xg = 1 / (1 + Math.exp(-(0.422 * Math.log(cl / (1 - cl)) + 0.367)));
-
-  xg = Math.max(0.03, Math.min(0.96, xg));
   return { t, key: pl.key, team: pl.team, x: Math.round(pos.x), y: Math.round(pos.y), z: Math.round(pos.z), speed, xg, goal: false };
+}
+
+/**
+ * Platt recalibration of a raw xG onto observed conversion rates. Applied once
+ * per shot, AFTER dedup and the rebound adjustment (multiplying an already
+ * calibrated probability would break calibration). The input clamp is wide
+ * ([0.005, 0.995]) so long-range and open-net shots keep their discrimination
+ * instead of being squashed onto a hard floor/ceiling.
+ */
+function calibrateXg(xg) {
+  const cl = Math.min(0.995, Math.max(0.005, xg));
+  return 1 / (1 + Math.exp(-(0.422 * Math.log(cl / (1 - cl)) + 0.367)));
 }
 
 /** xG for a synthetic goal (no detected shot): geometry of the scorer's last touch. */

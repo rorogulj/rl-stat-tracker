@@ -96,8 +96,11 @@ function clutchGoals(meta) {
   const goals = (meta && meta.goals) || [];
   const score = [0, 0];
   for (const g of goals) {
+    // active game clock when available (raw replay time includes countdowns and
+    // celebrations, which shifted these windows ~10-30 s early / flagged fake OT)
+    const gt = g.timeActive ?? g.time;
     const tiedBefore = score[0] === score[1];
-    if ((tiedBefore && g.time > 240) || g.time > 302) out.set(g.player, (out.get(g.player) || 0) + 1);
+    if ((tiedBefore && gt > 240) || gt > 300.5) out.set(g.player, (out.get(g.player) || 0) + 1);
     score[g.team === 1 ? 1 : 0]++;
   }
   return out;
@@ -158,7 +161,10 @@ function matchRatings(players, ctx = {}) {
         acc += zFns[comp][i](m.get(p.stats, possAdj(p.team)) || 0) * m.w;
         wsum += m.w;
       });
-      comps[comp] = Math.round(clamp(50 + (acc / wsum) * 26, 1, 99));
+      // rescale by the lobby's maximum possible |z| (√(n−1) for population sd) so a
+      // dominant 1v1 game can reach the same component range as a dominant 3v3 game;
+      // 58 ≈ 26·√5 keeps 3v3 (6 players) exactly on the old scale
+      comps[comp] = Math.round(clamp(50 + ((acc / wsum) / Math.sqrt(Math.max(1, players.length - 1))) * 58, 1, 99));
     }
     // clean sheet: the team conceded no goals → the defense did its job,
     // zero saves must not look like bad defense
@@ -181,10 +187,15 @@ function matchRatings(players, ctx = {}) {
     }
 
     // --- layer 3: match impact (share of goals, result, clutch) ---
+    // share is normalized by total credited events (goals + half-weighted assists) so
+    // the team's shares sum to exactly 1 — a plain (g+a)/teamGoals double-counts
+    // assisted goals and inflates assist-heavy teams; at 0-0 the share term is
+    // neutral (a hard-fought defensive draw is not everyone underperforming)
     const myTeamGoals = teamGoals[p.team];
     const g = p.stats.core.goals || 0, a = p.stats.core.assists || 0;
-    const share = myTeamGoals > 0 ? (g + a) / myTeamGoals : 0;
+    const teamAssists = players.reduce((acc2, q) => acc2 + (q.team === p.team ? (q.stats.core.assists || 0) : 0), 0);
     const expShare = 1 / Math.max(1, nTeam[p.team]);
+    const share = myTeamGoals > 0 ? (g + 0.5 * a) / (myTeamGoals + 0.5 * teamAssists) : expShare;
     const margin = Math.abs(teamGoals[0] - teamGoals[1]);
     const won = teamGoals[p.team] > teamGoals[1 - p.team];
     const lost = teamGoals[p.team] < teamGoals[1 - p.team];

@@ -61,7 +61,7 @@ function GbdtCard({ gbdt }) {
             <span className="sval srv-val">
               {g.training ? 'training…'
                 : g.trees
-                  ? `${g.trees} trees · ${g.nRows.toLocaleString('en-GB')} rows · val MAE ${g.valMAE} tiers · calibrated on ${g.calibrated} known ranks${MODEL_SOURCE[g.source] ? ` · ${MODEL_SOURCE[g.source]}` : ''}`
+                  ? `${g.trees} trees · ${g.nRows.toLocaleString('en-GB')} rows · val MAE ${g.valMAE}${g.baseMAE != null ? ` (baseline ${g.baseMAE})` : ''} tiers · calibrated on ${g.calibrated} known ranks${MODEL_SOURCE[g.source] ? ` · ${MODEL_SOURCE[g.source]}` : ''}`
                   : 'no model yet'}
             </span>
           </div>

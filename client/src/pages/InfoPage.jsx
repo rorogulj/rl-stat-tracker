@@ -12,7 +12,7 @@ import Scribble from '../components/Scribble.jsx';
 const CONCEPTS = [
   {
     term: 'Game rating (1–99)', cat: 'Ratings',
-    body: 'The number next to every player in every match. Three layers: 55% performance vs your own lobby (z-scores of 5 components against the other players in that match), 30% absolute production (z-score vs the entire database for that mode), 15% match impact (share of team goals, win/margin ±12, clutch bonus for OT or late equal-score goals). Clean sheets floor the defense component at 58; shortened lobbies (leavers) scale possession/touch stats. Computed on the fly — old replays never need reimporting.',
+    body: 'The number next to every player in every match. Three layers: 55% performance vs your own lobby (z-scores of 5 components against the other players in that match, rescaled by lobby size so 1v1 dominance can reach the same range as 3v3), 30% absolute production (z-score vs the entire database for that mode), 15% match impact (share of team goal involvements — an assist counts half a goal and the team\'s shares sum to 1; win/margin ±12; clutch bonus for OT or late equal-score goals on the active game clock; 0-0 is neutral, not a penalty). Clean sheets floor the defense component at 58; shortened lobbies (leavers) scale possession/touch stats. Computed on the fly — old replays never need reimporting.',
   },
   {
     term: 'Rating components (Attack / Defense / Possession / Boost / Pressure)', cat: 'Ratings',
@@ -52,7 +52,7 @@ const CONCEPTS = [
   },
   {
     term: 'xG (expected goals)', cat: 'Match analysis',
-    body: 'Each detected shot gets a probability of scoring from distance, angle, speed, open-goal factor and defenders on the shot line at the moment of the shot, calibrated on real shots (Platt scaling). Note: this is an "on-frame" xG (xGOT semantics — would it go in if not saved), so average conversion is ~50%, higher than broadcast-football xG.',
+    body: 'Each detected shot gets a probability of scoring from distance, angle, speed, open-goal factor and defenders on the shot line at the moment of the shot, calibrated on real shots (Platt scaling). Consecutive touches by the same player in one attacking sequence count as ONE chance (best of the sequence), a rebound right after a teammate\'s shot is worth more, and own goals are never credited to the own-goaler\'s xG. Note: this is an "on-frame" xG (xGOT semantics — would it go in if not saved), so average conversion is ~50%, higher than broadcast-football xG.',
   },
   {
     term: 'Key stats (match page)', cat: 'Match analysis',

@@ -121,20 +121,19 @@ function profile(playerKeyOrKeys, mode) {
   const oppStats = oppRows.map((r) => JSON.parse(r.stats));
   const o = (fn) => oppStats.length ? avg(oppStats.map((s) => fn(s) || 0)) : 0;
 
-  const heat = games[0].s.heatmap.map((row) => row.slice());
+  // career heatmap: normalize EVERY match (including the first) into the team-0
+  // frame at accumulation time — a trailing whole-grid flip keyed on game 0's team
+  // used to rotate all the other, already-normalized games 180° out of frame
+  const h0 = games[0].s.heatmap;
+  const HR = h0.length, HC = h0[0].length;
+  const flip0 = games[0].r.team === 1;
+  const heat = h0.map((row, y) => row.map((_, x) => (flip0 ? h0[HR - 1 - y][HC - 1 - x] : h0[y][x])));
   for (let i = 1; i < games.length; i++) {
     const h = games[i].s.heatmap;
-    // teams have different orientations: flip to "my goal at the bottom" (team 1 flip)
-    for (let y = 0; y < heat.length; y++) for (let x = 0; x < heat[0].length; x++) {
-      const flip = games[i].r.team === 1;
-      const sy = flip ? heat.length - 1 - y : y;
-      const sx = flip ? heat[0].length - 1 - x : x;
-      heat[y][x] += h[sy][sx];
+    const flip = games[i].r.team === 1;
+    for (let y = 0; y < HR; y++) for (let x = 0; x < HC; x++) {
+      heat[y][x] += flip ? h[HR - 1 - y][HC - 1 - x] : h[y][x];
     }
-  }
-  // orient the first match the same way
-  if (games[0].r.team === 1) {
-    heat.reverse(); heat.forEach((row) => row.reverse());
   }
 
   // list of accounts included in this profile (for the multi-account view)
@@ -479,7 +478,7 @@ function profile(playerKeyOrKeys, mode) {
     ...(() => {
       const trnR = isMe ? require('./trn').cachedRankForMode(mode) : (mode ? require('./trn').cachedPlayerRank(primaryKey, mode) : null);
       const myTier = (realTiers.length ? realTiers[realTiers.length - 1] : null) ?? trnR?.tier ?? (recentEst.length ? avg(recentEst) : null);
-      const pi = computePercentiles(games, mode, myTier);
+      const pi = computePercentiles(games, mode, myTier, keys);
       return pi
         ? { percentiles: pi.pct, percentileSource: pi.source, percentileSample: pi.sample }
         : { percentiles: null, percentileSource: null, percentileSample: null };
@@ -752,7 +751,7 @@ function getBenchStats(mode) {
   let rows = [];
   try {
     rows = stmts.benchPlayerRows.all(key).map((r) => {
-      try { return { stats: JSON.parse(r.stats), bucket: r.bench_bucket, mid: r.mid }; } catch { return null; }
+      try { return { stats: JSON.parse(r.stats), bucket: r.bench_bucket, mid: r.mid, playerKey: r.player_key }; } catch { return null; }
     }).filter(Boolean);
   } catch { /* no benchmark data */ }
   benchCache.set(key, { t: Date.now(), rows });
@@ -899,7 +898,7 @@ function tierToBucket(tier) {
  * otherwise fallback: all players from my matches.
  * Returns { pct: {...}, source: string }.
  */
-function computePercentiles(myGames, mode, myTier = null) {
+function computePercentiles(myGames, mode, myTier = null, myKeys = []) {
   const pctAgainst = (vals, mine, invert) => {
     let below = 0, equal = 0;
     for (const v of vals) { if (v < mine) below++; else if (v === mine) equal++; }
@@ -926,10 +925,13 @@ function computePercentiles(myGames, mode, myTier = null) {
     }
   }
 
-  // 2) fallback: players from my matches (average per player, min 2 matches)
+  // 2) fallback: players from my matches (average per player, min 2 matches);
+  // the profiled player (and their alt accounts) is excluded — being in your own
+  // comparison pool shaves the top percentiles
   const all = stmts.allPlayerRows.all().filter((r) => !mode || r.team_size === Number(mode));
   const byPlayer = new Map();
   for (const r of all) {
+    if (myKeys.includes(r.player_key)) continue;
     if (!byPlayer.has(r.player_key)) byPlayer.set(r.player_key, []);
     byPlayer.get(r.player_key).push(JSON.parse(r.stats));
   }

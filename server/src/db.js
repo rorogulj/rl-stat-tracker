@@ -132,7 +132,7 @@ const stmts = {
     GROUP BY ps.player_key ORDER BY matches DESC`),
   // benchmark rows (reference population per rank and mode)
   benchPlayerRows: db.prepare(`
-    SELECT ps.stats, ps.match_id AS mid, m.bench_bucket, m.team_size
+    SELECT ps.stats, ps.player_key, ps.match_id AS mid, m.bench_bucket, m.team_size
     FROM player_stats ps JOIN matches m ON m.id = ps.match_id WHERE m.benchmark = 1 AND m.team_size = ?`),
   benchCounts: db.prepare(`
     SELECT m.bench_bucket AS bucket, m.team_size, COUNT(DISTINCT m.id) AS matches, COUNT(*) AS players
