@@ -1458,3 +1458,13 @@ table.cmp.opp-table { width: 100%; }
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
 }
 .demo-banner b { color: var(--neon); letter-spacing: 0.08em; }
+
+/* corpus bucket x mode table on the Server tab */
+.corpus-grid {
+  display: grid; grid-template-columns: 130px repeat(4, 1fr); gap: 3px 10px;
+  font-size: 12px; max-width: 480px;
+}
+.corpus-grid .cg-h { color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: 1px; text-align: right; }
+.corpus-grid .cg-b { text-transform: uppercase; font-size: 10.5px; letter-spacing: 1px; font-weight: 650; }
+.corpus-grid .cg-n { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-2); }
+.corpus-grid .cg-sum { color: var(--text); font-weight: 650; }

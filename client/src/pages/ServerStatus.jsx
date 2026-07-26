@@ -230,6 +230,30 @@ export default function ServerStatus() {
                 </div>
               </div>
             ))}
+            {bi?.perBucketMode && (
+              <div style={{ marginTop: 14 }}>
+                <div className="rank-cap" style={{ marginBottom: 6 }}>
+                  Total corpus in database — all sources (ballchasing + bulk imports)
+                </div>
+                <div className="corpus-grid">
+                  <span className="cg-h" />
+                  <span className="cg-h">1v1</span><span className="cg-h">2v2</span><span className="cg-h">3v3</span><span className="cg-h">Σ</span>
+                  {BUCKET_ORDER.map((b) => {
+                    const m = bi.perBucketMode[b] || {};
+                    const tot = (m[1] || 0) + (m[2] || 0) + (m[3] || 0);
+                    return (
+                      <>
+                        <span key={b} className="cg-b" style={{ color: BUCKET_COLORS[b] }}>{b}</span>
+                        <span className="cg-n">{(m[1] || 0).toLocaleString('en-GB')}</span>
+                        <span className="cg-n">{(m[2] || 0).toLocaleString('en-GB')}</span>
+                        <span className="cg-n">{(m[3] || 0).toLocaleString('en-GB')}</span>
+                        <span className="cg-n cg-sum">{tot.toLocaleString('en-GB')}</span>
+                      </>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <div className="footnote">
               Folder (shareable): {dl.folder} · last activity {dl.lastActivity ? fmtTime(dl.lastActivity) : '—'}
               {bi && <> · imported into DB: <b style={{ color: 'var(--text)' }}>{bi.matches}</b> matches / {bi.players} player rows{bi.running ? ` (importing, ${bi.pending} left)` : ''}</>}

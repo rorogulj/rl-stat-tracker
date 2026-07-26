@@ -439,10 +439,17 @@ app.get('/api/server', (req, res) => {
   let benchImport = null;
   try {
     const rows = stmts.benchCounts.all();
+    // bucket × mode totals over the WHOLE corpus in the DB (downloader + bulk imports)
+    const perBucketMode = {};
+    for (const c of rows) {
+      if (!perBucketMode[c.bucket]) perBucketMode[c.bucket] = {};
+      perBucketMode[c.bucket][c.team_size] = c.matches;
+    }
     benchImport = {
       matches: rows.reduce((a, c) => a + c.matches, 0),
       players: rows.reduce((a, c) => a + c.players, 0),
-      perBucket: Object.fromEntries(rows.map((c) => [c.bucket, c.matches])),
+      perBucket: Object.fromEntries(rows.map((c) => [c.bucket, (Object.values(perBucketMode[c.bucket] || {})).reduce((x, y) => x + y, 0)])),
+      perBucketMode,
       running: importer.benchProgress.running,
       pending: importer.benchProgress.running ? importer.benchProgress.pending : 0,
     };
