@@ -9,6 +9,10 @@ server/data/
 # build output (served from client/dist, built with `npm run build`)
 client/dist/
 
+# replay parser binary — downloaded from the official rrrocket release with a
+# pinned SHA-256 by tools/fetch-rrrocket.mjs; never committed
+tools/rrrocket.exe
+
 *.log
 
 # incidental screenshots

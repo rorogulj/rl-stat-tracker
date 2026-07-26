@@ -35,6 +35,10 @@ function cmpVer(a, b) {
 let cache = null; // { t, latest }
 
 async function check(force) {
+  // opt-out: set RL_NO_UPDATE_CHECK=1 and the server never contacts GitHub
+  if (process.env.RL_NO_UPDATE_CHECK) {
+    return { current: VERSION, latest: null, available: false, dev: isDevCheckout, disabled: true };
+  }
   if (!force && cache && Date.now() - cache.t < 6 * 3600 * 1000) return result();
   let latest = null;
   try {

@@ -77,10 +77,39 @@ Per-mode filters (1v1 / 2v2 / 3v3) on the profile and opponents pages. "You vs. 
          →  client (React + Vite): dashboard
 ```
 
-- Parser: [rrrocket](https://github.com/nickbabcock/rrrocket) (boxcars) — reads network data at 30 fps
+- Parser: [rrrocket](https://github.com/nickbabcock/rrrocket) (boxcars) — reads network data at 30 fps.
+  The repo ships **no binaries**: `tools/fetch-rrrocket.mjs` downloads the official release
+  and verifies its SHA-256 against a hash pinned in the script before installing it.
 - Custom stat engine: `server/src/analyzer.js`
 - Database: built-in `node:sqlite` (no dependencies)
 - Different replay folder: set the `RL_REPLAY_DIR` env variable
+
+## Privacy & network
+
+The server binds to `127.0.0.1` only — it is not reachable from the network, and it
+**never uploads anything**. The complete list of outbound connections (all downloads):
+
+| Host | When | What |
+|---|---|---|
+| `raw.githubusercontent.com` | daily | version check (`package.json`) and newer published rank models |
+| `tracker.gg` | background, rate-limited | ranks of players from your matches |
+| `ballchasing.com` | only if you build your own benchmark corpus | public reference replays |
+| `github.com` / `codeload.github.com` | install & update only | app source (tagged release) and the official rrrocket parser |
+| `nodejs.org` | install only, if you have no Node.js | portable Node runtime |
+
+Your replays, database and API keys never leave your machine. To disable the update
+check entirely, set the `RL_NO_UPDATE_CHECK=1` environment variable.
+
+## How updates work
+
+1. The server compares its version with `package.json` on `main` (once per 6 h).
+2. If newer, an **↑ vX.Y.Z** button appears in the app — nothing installs automatically.
+3. Clicking it runs [`install.ps1`](install.ps1), which downloads the **tagged release**
+   (`vX.Y.Z` — an immutable, auditable snapshot, never the moving tip of main),
+   rebuilds, and restarts the server. The page reloads itself when the new version is up.
+4. Every release is listed in the [changelog](CHANGELOG.md) with its tag.
+
+Re-running the install command from the top of this README does exactly the same thing.
 
 ## Benchmark corpus (optional)
 

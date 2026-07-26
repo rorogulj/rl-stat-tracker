@@ -24,6 +24,9 @@ const REPLAY_DIR = defaultReplayDir();
 const progress = { running: false, total: 0, done: 0, current: null, errors: [], lastRun: null };
 
 function parseReplayFile(fullPath) {
+  if (!fs.existsSync(RRROCKET)) {
+    throw new Error('rrrocket.exe missing — run: node tools/fetch-rrrocket.mjs');
+  }
   const r = spawnSync(RRROCKET, ['--network-parse', '--json-lines', fullPath], {
     encoding: 'utf8', maxBuffer: 1024 * 1024 * 1024,
   });

@@ -88,13 +88,26 @@ $Npm = Join-Path $NodeDir 'npm.cmd'
 if (-not (Test-Path $Npm)) { $Npm = 'npm' } # system node case
 
 # ---------- 3. download the app ----------
+# Installs the latest tagged release, not the tip of main: the version is read
+# from package.json on main, then the immutable tag zip (vX.Y.Z) is downloaded,
+# so what runs is always an auditable, fixed snapshot.
 if ($RepoZip -and (Test-Path $RepoZip)) {
   Say "installing from local zip: $RepoZip"
   $zip = $RepoZip
 } else {
-  Say 'downloading the latest version from GitHub...'
   $zip = Join-Path $env:TEMP 'rl-tracker.zip'
-  Invoke-WebRequest "https://codeload.github.com/$Repo/zip/refs/heads/$Branch" -OutFile $zip -UseBasicParsing
+  $ref = "refs/heads/$Branch"
+  try {
+    $ver = (Invoke-RestMethod "https://raw.githubusercontent.com/$Repo/$Branch/package.json" -TimeoutSec 15).version
+    if ($ver) { $ref = "refs/tags/v$ver" }
+  } catch { }
+  Say "downloading $ref from GitHub..."
+  try {
+    Invoke-WebRequest "https://codeload.github.com/$Repo/zip/$ref" -OutFile $zip -UseBasicParsing
+  } catch {
+    Say 'tag not found - falling back to the main branch'
+    Invoke-WebRequest "https://codeload.github.com/$Repo/zip/refs/heads/$Branch" -OutFile $zip -UseBasicParsing
+  }
 }
 $tmp = Join-Path $env:TEMP 'rl-tracker-extract'
 if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp }
@@ -106,6 +119,12 @@ if (-not $RepoZip) { Remove-Item $zip -Force }
 Remove-Item -Recurse -Force $tmp
 
 # ---------- 4. dependencies + UI build ----------
+Say 'fetching the replay parser (official rrrocket release, SHA-256 verified)...'
+Push-Location $AppDir
+& $NodeExe tools\fetch-rrrocket.mjs
+if ($LASTEXITCODE -ne 0) { Pop-Location; throw 'replay parser download failed' }
+Pop-Location
+
 Say 'installing server dependencies...'
 Push-Location (Join-Path $AppDir 'server')
 cmd /c "`"$Npm`" ci --omit=dev --no-audit --no-fund > nul 2>&1"
