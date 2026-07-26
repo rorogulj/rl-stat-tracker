@@ -756,7 +756,9 @@ const benchCache = new Map(); // mode -> { t, rows: [{ stats, bucket }] }
 function getBenchStats(mode) {
   const key = Number(mode);
   const hit = benchCache.get(key);
-  if (hit && Date.now() - hit.t < 120 * 1000) return hit.rows;
+  // the corpus is large (100k+ rows after bulk imports) and changes slowly —
+  // re-parsing it every 2 minutes would stall requests
+  if (hit && Date.now() - hit.t < 15 * 60 * 1000) return hit.rows;
   let rows = [];
   try {
     rows = stmts.benchPlayerRows.all(key).map((r) => {

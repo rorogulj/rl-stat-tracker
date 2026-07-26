@@ -68,15 +68,15 @@ if (!isMainThread) {
     return tierToBucket(Math.round(known.reduce((a, b) => a + b, 0) / known.length));
   };
 
+  const CAP = Number(arg('cap', 4000)); // max imports per bucket × mode (0 = unlimited)
+
   const done = new Set(stmts.importedFiles.all().filter((r) => r.status === 'ok').map((r) => r.file));
-  const queue = [];
+  const candidates = [];
   let notRanked = 0, unlabeled = 0;
   for (const mode of ['1v1', '2v2', '3v3']) {
     const d = path.join(DIR, mode);
     if (!fs.existsSync(d)) continue;
-    let files = fs.readdirSync(d).filter((f) => f.endsWith('.replay'));
-    for (const f of files) {
-      if (LIMIT && queue.length >= LIMIT * 3) break;
+    for (const f of fs.readdirSync(d).filter((x) => x.endsWith('.replay'))) {
       const logKey = `kaggle/${mode}/${f}`;
       if (done.has(logKey)) continue;
       const id = path.basename(f, '.replay');
@@ -84,10 +84,28 @@ if (!isMainThread) {
       if (!r || !isRanked(r)) { notRanked++; continue; }
       const bucket = labelFor(id);
       if (!bucket || bucket === 'bronze') { unlabeled++; continue; }
-      queue.push({ full: path.join(d, f), logKey, expectSize: Number(mode[0]), bucket });
+      const known = r.players.filter((p) => obs[p.id]).length;
+      candidates.push({
+        full: path.join(d, f), logKey, expectSize: Number(mode[0]), bucket,
+        conf: known / Math.max(1, r.players.length), // label confidence: fraction of known players
+      });
     }
   }
-  console.log(`${queue.length} labeled ranked replays to process (skipped: ${notRanked} not-ranked, ${unlabeled} unlabeled) (${WORKERS} workers${DRY ? ', DRY RUN' : ''})`);
+  // most confident labels first; cap per bucket × mode so 51k SSL games don't
+  // drown the rest of the corpus
+  candidates.sort((a, b) => b.conf - a.conf);
+  const perCell = {};
+  const queue = [];
+  for (const c of candidates) {
+    const cell = `${c.bucket}/${c.expectSize}`;
+    perCell[cell] = (perCell[cell] || 0);
+    if (CAP && perCell[cell] >= CAP) continue;
+    perCell[cell]++;
+    queue.push(c);
+    if (LIMIT && queue.length >= LIMIT) break;
+  }
+  console.log(`${queue.length} labeled ranked replays to process (cap ${CAP}/bucket/mode; skipped: ${notRanked} not-ranked, ${unlabeled} unlabeled) (${WORKERS} workers${DRY ? ', DRY RUN' : ''})`);
+  console.log('planned per cell:', perCell);
   if (!queue.length) process.exit(0);
 
   const buckets = {}; const skips = {}; let doneN = 0, imported = 0, failed = 0;

@@ -18,7 +18,7 @@ const FAKE_POOL = [
   'NiceShotNina', 'What_A_Save', 'BumpMerchant', 'TouchGrassTom', 'ZeroBoostZoe',
   'PadThiefPaul', 'ShadowDefender', 'CarryPotato', 'TiltedTeo', 'LagSpikeLuka',
   'BronzeInDisguise', 'SmurfHunter', 'PanicClearPete', 'CornerBoostKarl', 'HalfFlipHana',
-  'FakeChallengeF', 'CutBackKiki', 'PinchPointPia', 'DunkMasterDino', 'RampRiderRoko2',
+  'FakeChallengeF', 'CutBackKiki', 'PinchPointPia', 'DunkMasterDino', 'RampRiderRex',
 ];
 
 const fetchJson = async (p) => {
@@ -57,14 +57,24 @@ function scrubString(s) {
   for (const [rk, fk] of keyMap) if (out.includes(rk)) out = out.split(rk).join(fk);
   return out;
 }
+// filesystem paths leak the WINDOWS USERNAME (≈ the real name) — neutralize any
+// user-profile path and never let the demo claim to be a dev checkout
+import os from 'node:os';
+const HOME = os.homedir();
+const USERNAME = path.basename(HOME);
+function scrubPaths(s) {
+  return s.split(HOME).join('C:\\Users\\demo').split(USERNAME).join('demo');
+}
+
 function scrub(node) {
-  if (typeof node === 'string') return scrubString(node);
+  if (typeof node === 'string') return scrubPaths(scrubString(node));
   if (Array.isArray(node)) return node.map(scrub);
   if (node && typeof node === 'object') {
     const out = {};
     for (const [k, v] of Object.entries(node)) {
       const nk = scrubString(k);
       if (nk === 'epicId' || nk === 'uid' || nk === 'platformUserId' || nk === 'platformUserHandle') { out[nk] = null; continue; }
+      if (nk === 'dev') { out[nk] = false; continue; } // demo must not show dev-only UI
       out[nk] = scrub(v);
     }
     return out;
@@ -119,10 +129,12 @@ for (const [id, withTl] of [...new Map(detailIds.map(([id, t]) => [id, t]))]) {
 const realNames = [...nameMap.keys()].filter((n) => nameMap.get(n) !== n);
 const realKeys = [...keyMap.keys()];
 let leaks = 0;
+const pathNeedles = [USERNAME, HOME.replace(/\\/g, '\\\\'), 'OneDrive'];
 for (const f of fs.readdirSync(OUT)) {
   const body = fs.readFileSync(path.join(OUT, f), 'utf8');
   for (const n of realNames) if (body.includes(JSON.stringify(n).slice(1, -1))) { console.error(`LEAK: name "${n}" in ${f}`); leaks++; }
   for (const k of realKeys) if (body.includes(k)) { console.error(`LEAK: key "${k}" in ${f}`); leaks++; }
+  for (const p of pathNeedles) if (body.includes(p)) { console.error(`LEAK: path fragment "${p}" in ${f}`); leaks++; }
 }
 if (leaks) { console.error(`${leaks} leaks — demo NOT safe, aborting`); process.exit(1); }
 console.log(`OK: ${files} files, ${(bytes / 1048576).toFixed(1)} MB, ${nameMap.size} players anonymized, 0 leaks`);

@@ -4,6 +4,21 @@ All notable changes to RL Stat Tracker. Versions follow `0.x` while the app is
 in active development; each release is tagged (`v0.1.0`) and picked up by
 installed copies through the in-app update button.
 
+## 0.3.8 — 2026-07-26
+
+Privacy hardening (fourth independent review).
+
+- Demo data no longer contains the machine's filesystem paths (they leaked the
+  Windows user name); the demo generator now scrubs paths, forces non-dev mode
+  and fails on any path fragment in its output. Repository history was rewritten
+  to remove the leaked value.
+- The public welcome page reads only `{up, version}` from a local tracker —
+  never paths or keys — and probes localhost only after an explicit click
+  ("Already installed?"), so visitors without a tracker are never prompted for
+  local-network access.
+- Demo snapshots hide dev-only UI; rank-model training balance (per-bucket
+  subsampling) and the large-corpus cache TTL are now committed.
+
 ## 0.3.7 — 2026-07-26
 
 - Removed the 3D replay viewer — the 2D top-down view is the analytical one and

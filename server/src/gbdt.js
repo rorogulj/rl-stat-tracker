@@ -126,8 +126,25 @@ async function trainMode(mode) {
   const { getBenchStats, SHEET_STATS, BUCKET_TIERS } = require('./aggregate');
   // rows with an unknown bucket carry no usable label — drop them instead of
   // silently defaulting to some middle tier
-  const rows = getBenchStats(mode).filter((r) => BUCKET_TIERS[r.bucket] != null);
+  let rows = getBenchStats(mode).filter((r) => BUCKET_TIERS[r.bucket] != null);
   if (rows.length < 2000) return null;
+  // training balance: the corpus keeps EVERY game (percentiles want the full
+  // population), but a bucket with 10× more rows than the rest would dominate the
+  // loss — deterministically subsample each bucket to at most MAX_BUCKET_ROWS
+  const MAX_BUCKET_ROWS = 10000;
+  {
+    const byBucket = new Map();
+    for (const r of rows) (byBucket.get(r.bucket) || byBucket.set(r.bucket, []).get(r.bucket)).push(r);
+    const rnd = rng(4242 + Number(mode));
+    const kept = [];
+    for (const arr of byBucket.values()) {
+      if (arr.length <= MAX_BUCKET_ROWS) { kept.push(...arr); continue; }
+      const idx = arr.map((_, i) => i).sort(() => rnd() - 0.5).slice(0, MAX_BUCKET_ROWS);
+      for (const i of idx) kept.push(arr[i]);
+      console.log(`[gbdt] mode ${mode}: bucket subsampled ${arr.length} -> ${MAX_BUCKET_ROWS} rows for training balance`);
+    }
+    rows = kept;
+  }
 
   const m = SHEET_STATS.length;
   const X = rows.map((r) => featuresOf(r.stats));
