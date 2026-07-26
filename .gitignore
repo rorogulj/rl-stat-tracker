@@ -3,6 +3,11 @@ node_modules/
 # downloaded ballchasing corpus (~27k replays) — the repo only carries the download tool
 benchmark-replays/
 
+# external replay datasets (Kaggle high-level GC/SSL dump etc.) — never committed
+kaggle-replays/
+dataset/
+datasets/
+
 # local data: SQLite database, API key (ballchasing.key!), trained GBDT models
 server/data/
 
