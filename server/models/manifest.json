@@ -1,19 +1,19 @@
 {
-  "publishedAt": "2026-07-26T14:54:42.066Z",
+  "publishedAt": "2026-07-26T15:24:52.179Z",
   "models": {
     "1": {
-      "trainedAt": "2026-07-26T14:53:29.194Z",
-      "valMAE": 3.71,
-      "baseMAE": 7.72,
-      "nRows": 15604,
-      "trees": 284
+      "trainedAt": "2026-07-26T15:24:24.351Z",
+      "valMAE": 3.54,
+      "baseMAE": 7.77,
+      "nRows": 17596,
+      "trees": 304
     },
     "2": {
-      "trainedAt": "2026-07-26T14:53:32.510Z",
-      "valMAE": 4.65,
-      "baseMAE": 6.13,
-      "nRows": 41864,
-      "trees": 172
+      "trainedAt": "2026-07-26T15:24:29.151Z",
+      "valMAE": 4.54,
+      "baseMAE": 5.41,
+      "nRows": 34978,
+      "trees": 63
     },
     "3": {
       "trainedAt": "2026-07-26T14:53:33.169Z",
