@@ -1468,3 +1468,12 @@ table.cmp.opp-table { width: 100%; }
 .corpus-grid .cg-b { text-transform: uppercase; font-size: 10.5px; letter-spacing: 1px; font-weight: 650; }
 .corpus-grid .cg-n { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-2); }
 .corpus-grid .cg-sum { color: var(--text); font-weight: 650; }
+
+/* corpus table v2: fill-behind-number cells + collapsible downloader log */
+.corpus-grid { max-width: 560px; gap: 4px 8px; }
+.cg-cell { position: relative; display: block; border-radius: 4px; background: rgba(255,255,255,0.04); overflow: hidden; padding: 2px 8px; }
+.cg-fill { position: absolute; inset: 0; opacity: 0.22; border-radius: 4px; }
+.cg-num { position: relative; display: block; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-2); font-size: 12px; }
+.cg-num.cg-sum { color: var(--text); font-weight: 650; }
+.srv-log-details summary { font-size: 11.5px; color: var(--muted); cursor: pointer; }
+.srv-log-details summary:hover { color: var(--text); }

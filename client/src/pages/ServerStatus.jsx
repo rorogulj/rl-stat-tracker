@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { api, fmtDate } from '../api.js';
 import { BUCKET_COLORS } from '../theme.js';
 import Scribble from '../components/Scribble.jsx';
@@ -208,58 +208,57 @@ export default function ServerStatus() {
                 </div>
               </>
             )}
-            {(dl.jobs || []).map((job) => (
-              <div key={job.playlist} style={{ marginBottom: 12 }}>
-                <div className="rank-cap" style={{ marginBottom: 6 }}>
-                  {job.label} — {job.done}/{job.target * 8}
-                  {job.done >= job.target * 8 ? ' ✓' : ''}
+            {bi?.perBucketMode && (() => {
+              // one table for everything: DB corpus per bucket × mode, with the
+              // downloader's per-bucket target as a subtle fill behind each cell
+              const targetFor = { 1: 0, 2: 0, 3: 0 };
+              for (const j of dl.jobs || []) {
+                targetFor[j.playlist === 'ranked-duels' ? 1 : j.playlist === 'ranked-standard' ? 3 : 2] = j.target;
+              }
+              const cell = (b, mode) => {
+                const n = (bi.perBucketMode[b] || {})[mode] || 0;
+                const t = targetFor[mode];
+                const pct = t ? Math.min(100, (n / t) * 100) : 0;
+                return (
+                  <span className="cg-cell" key={`${b}${mode}`}>
+                    <span className="cg-fill" style={{ width: `${pct}%`, background: BUCKET_COLORS[b] }} />
+                    <span className="cg-num">{n.toLocaleString('en-GB')}</span>
+                  </span>
+                );
+              };
+              return (
+                <div style={{ marginTop: 4 }}>
+                  <div className="rank-cap" style={{ marginBottom: 8 }}>
+                    Corpus by rank — all sources · cell fill = progress toward the download target
+                    ({targetFor[1]}/{targetFor[2]}/{targetFor[3]} per bucket)
+                  </div>
+                  <div className="corpus-grid">
+                    <span className="cg-h" />
+                    <span className="cg-h">1v1</span><span className="cg-h">2v2</span><span className="cg-h">3v3</span><span className="cg-h">Σ</span>
+                    {BUCKET_ORDER.map((b) => {
+                      const m = bi.perBucketMode[b] || {};
+                      const tot = (m[1] || 0) + (m[2] || 0) + (m[3] || 0);
+                      return (
+                        <React.Fragment key={b}>
+                          <span className="cg-b" style={{ color: BUCKET_COLORS[b] }}>{b}</span>
+                          {cell(b, 1)}{cell(b, 2)}{cell(b, 3)}
+                          <span className="cg-cell"><span className="cg-num cg-sum">{tot.toLocaleString('en-GB')}</span></span>
+                        </React.Fragment>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="bucket-grid">
-                  {BUCKET_ORDER.map((b) => {
-                    const n = job.perBucket[b] || 0;
-                    return (
-                      <div key={b} className="bucket-cell">
-                        <span className="bucket-name" style={{ color: BUCKET_COLORS[b] }}>{b}</span>
-                        <span className="pbar" style={{ width: '100%' }}>
-                          <span className="pfill" style={{ width: `${Math.min(100, (n / job.target) * 100)}%`, background: BUCKET_COLORS[b] }} />
-                        </span>
-                        <span className="bucket-n">{n}/{job.target}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-            {bi?.perBucketMode && (
-              <div style={{ marginTop: 14 }}>
-                <div className="rank-cap" style={{ marginBottom: 6 }}>
-                  Total corpus in database — all sources (ballchasing + bulk imports)
-                </div>
-                <div className="corpus-grid">
-                  <span className="cg-h" />
-                  <span className="cg-h">1v1</span><span className="cg-h">2v2</span><span className="cg-h">3v3</span><span className="cg-h">Σ</span>
-                  {BUCKET_ORDER.map((b) => {
-                    const m = bi.perBucketMode[b] || {};
-                    const tot = (m[1] || 0) + (m[2] || 0) + (m[3] || 0);
-                    return (
-                      <>
-                        <span key={b} className="cg-b" style={{ color: BUCKET_COLORS[b] }}>{b}</span>
-                        <span className="cg-n">{(m[1] || 0).toLocaleString('en-GB')}</span>
-                        <span className="cg-n">{(m[2] || 0).toLocaleString('en-GB')}</span>
-                        <span className="cg-n">{(m[3] || 0).toLocaleString('en-GB')}</span>
-                        <span className="cg-n cg-sum">{tot.toLocaleString('en-GB')}</span>
-                      </>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+              );
+            })()}
             <div className="footnote">
               Folder (shareable): {dl.folder} · last activity {dl.lastActivity ? fmtTime(dl.lastActivity) : '—'}
               {bi && <> · imported into DB: <b style={{ color: 'var(--text)' }}>{bi.matches}</b> matches / {bi.players} player rows{bi.running ? ` (importing, ${bi.pending} left)` : ''}</>}
             </div>
             {dl.logTail?.length > 0 && (
-              <pre className="srv-log" style={{ maxHeight: 130, marginTop: 10 }}>{dl.logTail.join('\n')}</pre>
+              <details className="srv-log-details" style={{ marginTop: 10 }}>
+                <summary>Downloader log (last {dl.logTail.length} lines)</summary>
+                <pre className="srv-log" style={{ maxHeight: 160, marginTop: 8 }}>{dl.logTail.join('\n')}</pre>
+              </details>
             )}
           </div>
 
