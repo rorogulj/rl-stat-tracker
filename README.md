@@ -9,6 +9,8 @@ leave your machine.
 It's under active development — I keep updating it until it's genuinely good.
 See the [changelog](CHANGELOG.md) for what's new.
 
+![Player profile](docs/screenshot-profile.png)
+
 **Built with:** React + Vite (UI), Recharts (charts), Three.js (3D replay viewer),
 Node.js + Express (local server), the built-in `node:sqlite` database,
 [rrrocket](https://github.com/nickbabcock/rrrocket) (Rust/boxcars replay parser),

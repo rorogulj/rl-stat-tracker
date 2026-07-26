@@ -4,6 +4,12 @@ All notable changes to RL Stat Tracker. Versions follow `0.x` while the app is
 in active development; each release is tagged (`v0.1.0`) and picked up by
 installed copies through the in-app update button.
 
+## 0.1.4 — 2026-07-26
+
+- The Server nav link is shown on dev machines only; regular installs can still
+  open the status page directly at `localhost:7845/server` (troubleshooting).
+- README: added a profile screenshot.
+
 ## 0.1.3 — 2026-07-26
 
 - Server tab: the ballchasing corpus download section is now shown only on

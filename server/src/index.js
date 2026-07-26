@@ -40,6 +40,7 @@ app.get('/api/status', (req, res) => {
   } catch { /* no benchmark data */ }
   res.json({
     version: require('./update').VERSION,
+    dev: require('./update').isDevCheckout,
     replayDir: importer.REPLAY_DIR,
     pending: importer.pendingFiles().length,
     progress: importer.progress,

@@ -152,7 +152,8 @@ export default function App() {
           <NavLink to="/opponents">Players</NavLink>
           <NavLink to="/compare">Compare</NavLink>
           <NavLink to="/ladder">Ladder</NavLink>
-          <NavLink to="/server">Server</NavLink>
+          {/* dev machine only — regular installs reach it directly at /server (troubleshooting) */}
+          {status?.dev && <NavLink to="/server">Server</NavLink>}
           <NavLink to="/info">Info</NavLink>
         </nav>
         <PlayerSearch />
