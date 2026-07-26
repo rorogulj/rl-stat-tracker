@@ -8,6 +8,8 @@
     "import": "cd server && node src/cli-import.js",
     "build": "cd client && npm run build",
     "benchmark:download": "node tools/benchmark-download.mjs",
-    "publish-models": "node tools/publish-models.mjs"
+    "publish-models": "node tools/publish-models.mjs",
+    "test": "node --test server/test/rating.test.js server/test/golden.test.js",
+    "golden:update": "node tools/update-golden.mjs"
   }
 }

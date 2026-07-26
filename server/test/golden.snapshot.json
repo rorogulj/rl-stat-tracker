@@ -1,0 +1,212 @@
+{
+  "analyzerVersion": 17,
+  "fixtures": {
+    "fixture-a.replay": {
+      "teamSize": 2,
+      "score": [
+        0,
+        0
+      ],
+      "overtime": false,
+      "duration": 1.1,
+      "goals": [],
+      "teamXg": {
+        "0": 0,
+        "1": 0
+      },
+      "players": []
+    },
+    "fixture-b.replay": {
+      "teamSize": 1,
+      "score": [
+        0,
+        0
+      ],
+      "overtime": false,
+      "duration": 11.3,
+      "goals": [],
+      "teamXg": {
+        "0": 0.21,
+        "1": 0.69
+      },
+      "players": [
+        {
+          "name": "CapnKid",
+          "team": 0,
+          "goals": 0,
+          "assists": 0,
+          "saves": 0,
+          "xg": 0.21,
+          "shots": 1,
+          "touches": 1,
+          "collected": 36,
+          "bigPads": 0,
+          "smallPads": 3,
+          "pctBehindBall": 41,
+          "kickoffsWon": 1
+        },
+        {
+          "name": "Jupole1",
+          "team": 1,
+          "goals": 0,
+          "assists": 0,
+          "saves": 1,
+          "xg": 0.69,
+          "shots": 1,
+          "touches": 4,
+          "collected": 12,
+          "bigPads": 0,
+          "smallPads": 1,
+          "pctBehindBall": 100,
+          "kickoffsWon": 0
+        }
+      ]
+    },
+    "fixture-c.replay": {
+      "teamSize": 1,
+      "score": [
+        1,
+        0
+      ],
+      "overtime": false,
+      "duration": 11.5,
+      "goals": [
+        {
+          "team": 0,
+          "t": 11.5
+        }
+      ],
+      "teamXg": {
+        "0": 0.83,
+        "1": 0.21
+      },
+      "players": [
+        {
+          "name": "SSLGrandChamp253",
+          "team": 0,
+          "goals": 0,
+          "assists": 0,
+          "saves": 0,
+          "xg": 0.83,
+          "shots": 1,
+          "touches": 3,
+          "collected": 112,
+          "bigPads": 1,
+          "smallPads": 1,
+          "pctBehindBall": 83.2,
+          "kickoffsWon": 1
+        },
+        {
+          "name": "prompt",
+          "team": 1,
+          "goals": 0,
+          "assists": 0,
+          "saves": 0,
+          "xg": 0.21,
+          "shots": 1,
+          "touches": 2,
+          "collected": 129,
+          "bigPads": 1,
+          "smallPads": 4,
+          "pctBehindBall": 58.6,
+          "kickoffsWon": 0
+        }
+      ]
+    },
+    "fixture-d.replay": {
+      "teamSize": 1,
+      "score": [
+        4,
+        8
+      ],
+      "overtime": false,
+      "duration": 246.9,
+      "goals": [
+        {
+          "team": 0,
+          "t": 21.1
+        },
+        {
+          "team": 1,
+          "t": 38.8
+        },
+        {
+          "team": 0,
+          "t": 53.9
+        },
+        {
+          "team": 1,
+          "t": 75.7
+        },
+        {
+          "team": 1,
+          "t": 89.1
+        },
+        {
+          "team": 1,
+          "t": 109.6
+        },
+        {
+          "team": 0,
+          "t": 118.8
+        },
+        {
+          "team": 0,
+          "t": 130.8
+        },
+        {
+          "team": 1,
+          "t": 160.3
+        },
+        {
+          "team": 1,
+          "t": 190.6
+        },
+        {
+          "team": 1,
+          "t": 210.2
+        },
+        {
+          "team": 1,
+          "t": 246.9
+        }
+      ],
+      "teamXg": {
+        "0": 3.32,
+        "1": 5.98
+      },
+      "players": [
+        {
+          "name": "Mazie_2000",
+          "team": 1,
+          "goals": 8,
+          "assists": 0,
+          "saves": 5,
+          "xg": 5.98,
+          "shots": 12,
+          "touches": 44,
+          "collected": 2223,
+          "bigPads": 17,
+          "smallPads": 60,
+          "pctBehindBall": 76.8,
+          "kickoffsWon": 2
+        },
+        {
+          "name": "flizik μ",
+          "team": 0,
+          "goals": 4,
+          "assists": 0,
+          "saves": 1,
+          "xg": 3.32,
+          "shots": 8,
+          "touches": 49,
+          "collected": 1605,
+          "bigPads": 15,
+          "smallPads": 40,
+          "pctBehindBall": 71.8,
+          "kickoffsWon": 7
+        }
+      ]
+    }
+  }
+}
