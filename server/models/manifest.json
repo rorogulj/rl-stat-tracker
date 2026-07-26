@@ -1,23 +1,26 @@
 {
-  "publishedAt": "2026-07-26T06:05:52.253Z",
+  "publishedAt": "2026-07-26T12:40:14.703Z",
   "models": {
     "1": {
-      "trainedAt": "2026-07-23T17:37:41.168Z",
+      "trainedAt": "2026-07-26T12:40:12.709Z",
       "valMAE": 3.59,
+      "baseMAE": 4.95,
       "nRows": 5454,
-      "trees": 103
+      "trees": 68
     },
     "2": {
-      "trainedAt": "2026-07-25T18:55:27.897Z",
-      "valMAE": 4.54,
-      "nRows": 18079,
-      "trees": 45
+      "trainedAt": "2026-07-26T12:20:26.226Z",
+      "valMAE": 5.53,
+      "baseMAE": 6.19,
+      "nRows": 10322,
+      "trees": 51
     },
     "3": {
-      "trainedAt": "2026-07-23T17:37:47.803Z",
-      "valMAE": 2.25,
-      "nRows": 7529,
-      "trees": 346
+      "trainedAt": "2026-07-26T12:20:28.817Z",
+      "valMAE": 2.37,
+      "baseMAE": 4,
+      "nRows": 2689,
+      "trees": 87
     }
   }
 }
