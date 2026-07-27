@@ -100,6 +100,7 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_ps_player ON player_stats(player_key);
   CREATE INDEX IF NOT EXISTS idx_matches_date ON matches(date);
+  CREATE INDEX IF NOT EXISTS idx_matches_benchmark ON matches(benchmark);
 `);
 
 // benchmark columns (reference ballchasing matches — separate from personal stats)
@@ -146,6 +147,7 @@ const stmts = {
   logImport: db.prepare(`INSERT OR REPLACE INTO import_log (file, status, error) VALUES (?, ?, ?)`),
   importedFiles: db.prepare(`SELECT file, status FROM import_log`),
   listMatches: db.prepare(`SELECT id, file, name, map, match_type, team_size, date, duration, overtime, team0_score, team1_score FROM matches WHERE benchmark = 0 ORDER BY date DESC`),
+  countMatches: db.prepare(`SELECT COUNT(*) AS c FROM matches WHERE benchmark = 0`),
   getMatch: db.prepare(`SELECT * FROM matches WHERE id = ?`),
   getMatchPlayers: db.prepare(`SELECT * FROM player_stats WHERE match_id = ?`),
   allPlayerRows: db.prepare(`

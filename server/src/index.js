@@ -38,27 +38,39 @@ app.get('/api/status', (req, res, next) => {
   next();
 });
 
+// the DB-derived status fields scan the whole corpus (bench counts, player group-bys,
+// import_log) — with a 60k+ benchmark corpus that is seconds of CPU per call, and the
+// UI polls this endpoint, so cache them briefly; in-memory fields stay live
+const statusCache = { t: 0, data: null };
 app.get('/api/status', (req, res) => {
-  let bench = null;
-  try {
-    const counts = stmts.benchCounts.all();
-    bench = {
-      matches: counts.reduce((a, c) => a + c.matches, 0),
-      players: counts.reduce((a, c) => a + c.players, 0),
-      buckets: counts.map((c) => ({ bucket: c.bucket, mode: c.team_size, matches: c.matches })),
-      importing: importer.benchProgress.running,
-      pendingFiles: importer.benchProgress.running ? importer.benchProgress.pending : undefined,
+  if (!statusCache.data || Date.now() - statusCache.t > 5000) {
+    let benchCounts = null;
+    try { benchCounts = stmts.benchCounts.all(); } catch { /* no benchmark data */ }
+    statusCache.data = {
+      benchCounts,
+      pending: importer.pendingFiles().length,
+      matches: stmts.countMatches.get().c,
+      me: detectMe(),
     };
-  } catch { /* no benchmark data */ }
+    statusCache.t = Date.now();
+  }
+  const c = statusCache.data;
+  const bench = c.benchCounts ? {
+    matches: c.benchCounts.reduce((a, x) => a + x.matches, 0),
+    players: c.benchCounts.reduce((a, x) => a + x.players, 0),
+    buckets: c.benchCounts.map((x) => ({ bucket: x.bucket, mode: x.team_size, matches: x.matches })),
+    importing: importer.benchProgress.running,
+    pendingFiles: importer.benchProgress.running ? importer.benchProgress.pending : undefined,
+  } : null;
   res.json({
     version: require('./update').VERSION,
     dev: require('./update').isDevCheckout,
     replayDir: importer.getReplayDir(),
     replayDirExists: fs.existsSync(importer.getReplayDir()),
-    pending: importer.pendingFiles().length,
+    pending: c.pending,
     progress: importer.progress,
-    matches: stmts.listMatches.all().length,
-    me: detectMe(),
+    matches: c.matches,
+    me: c.me,
     bench,
   });
 });

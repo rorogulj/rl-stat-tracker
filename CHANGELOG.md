@@ -4,6 +4,16 @@ All notable changes to RL Stat Tracker. Versions follow `0.x` while the app is
 in active development; each release is tagged (`v0.1.0`) and picked up by
 installed copies through the in-app update button.
 
+## 0.3.10 — 2026-07-27
+
+- **Fixed the server becoming unresponsive with a large benchmark corpus.**
+  `/api/status` (polled by the UI) recomputed corpus-wide aggregates on every
+  call — with tens of thousands of benchmark matches each poll cost seconds of
+  CPU, requests queued faster than they were served and the server pegged one
+  core while timing out everything. The DB-derived status fields are now cached
+  for 5 seconds, the match count is a real `COUNT(*)` instead of materializing
+  every row, and `matches(benchmark)` gained an index.
+
 ## 0.3.9 — 2026-07-27
 
 First-round feedback from real installs.
