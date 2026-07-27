@@ -337,12 +337,12 @@ const SECTIONS = [
           <b>Welcome screen.</b> If <M>/api/status</M> does not answer — the public
           demo deployment, or the server simply not running — a landing screen appears with
           setup instructions, re-checking every five seconds and loading the app the moment
-          the server comes up. On request ("check for a local tracker") the public page
-          also probes <M>localhost:7845</M> and offers to open a running local tracker;
-          browsers guard that public-page-to-localhost hop behind a local-network
-          preflight or permission prompt (allow it — the local server answers the
-          preflight), the check is desktop-only, and this article is served standalone
-          at <M>/info</M> so it stays readable on phones.
+          the server comes up. The public page does not probe for a local tracker —
+          browsers block or permission-gate requests from a public page
+          to <M>localhost</M>, which made any automatic check unreliable — it simply
+          links to <M>localhost:7845</M>, where a plain navigation always reaches an
+          installed tracker. The link is desktop-only, and this article is served
+          standalone at <M>/info</M> so it stays readable on phones.
         </p>
         <p>
           <b>Updates.</b> The server compares its version against the repository every six

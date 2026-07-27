@@ -4,6 +4,15 @@ All notable changes to RL Stat Tracker. Versions follow `0.x` while the app is
 in active development; each release is tagged (`v0.1.0`) and picked up by
 installed copies through the in-app update button.
 
+## 0.3.12 — 2026-07-27
+
+- **The public page no longer tries to detect a local tracker.** Even with the
+  preflight fix some browsers (LAN-protection ad-block filters, permission
+  denials) still block a public page from reaching `localhost`, and the check
+  failing looked like the tracker was broken. The landing now simply links to
+  `localhost:7845` — a plain navigation always works — and the "Retry now"
+  button is hidden on the public page, where it could never succeed.
+
 ## 0.3.11 — 2026-07-27
 
 - **Fixed "No tracker found on this machine" on the public page even when the

@@ -37,8 +37,6 @@ const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPod|Mobile
 
 export default function Welcome({ onUp }) {
   const [tries, setTries] = useState(0);
-  const [localUp, setLocalUp] = useState(false);
-  const [probed, setProbed] = useState(false);
 
   const ping = async () => {
     try {
@@ -49,18 +47,6 @@ export default function Welcome({ onUp }) {
       return;
     } catch { /* same-origin server not there */ }
     setTries((t) => t + 1);
-  };
-
-  // localhost probe runs ONLY on explicit click: an automatic cross-origin probe
-  // to a local address triggers Chrome's Local Network Access prompt for every
-  // visitor, including people without the tracker
-  const probeLocal = async () => {
-    setProbed(true);
-    try {
-      const r = await fetch(`${LOCAL}/api/status`);
-      if (r.ok) { await r.json(); setLocalUp(true); return; }
-    } catch { /* no local tracker (or old version without CORS) */ }
-    setLocalUp(false);
   };
 
   useEffect(() => {
@@ -93,21 +79,15 @@ export default function Welcome({ onUp }) {
           </div>
         )}
 
-        {localUp ? (
-          <div className="w-status up">
-            <span className="w-dot ok" />
-            Your tracker is running on this machine —{' '}
-            <a className="w-btn primary sm" href={LOCAL}>Open it ↗</a>
-          </div>
-        ) : isRemote ? (
+        {isRemote ? (
+          // no localhost probe here: browsers block or permission-gate public-page →
+          // localhost requests (CORS/LNA, ad-block LAN filters), so a check from this
+          // page is unreliable — a plain navigation link always works
           !isMobile && (
             <div className="w-status">
-              <span className="w-dot" />
-              {probed
-                ? <>No tracker found on this machine — if the browser asked about local-network
-                    access, allow it and <button className="linklike" onClick={probeLocal}>check again</button>;
-                    otherwise install below, or open <code>localhost:7845</code> manually.</>
-                : <>Already installed?{' '}<button className="linklike" onClick={probeLocal}>Check for a local tracker</button></>}
+              <span className="w-dot ok" />
+              <span>Already installed? Open your tracker at{' '}
+                <a href={LOCAL}><code>localhost:7845</code> ↗</a></span>
             </div>
           )
         ) : (
@@ -139,7 +119,8 @@ export default function Welcome({ onUp }) {
           {isRemote && <button className="w-btn primary" onClick={enterDemo}>Try the demo</button>}
           <a className="w-btn" href="/info">How the stats work</a>
           <a className={`w-btn${isRemote ? '' : ' primary'}`} href={REPO} target="_blank" rel="noreferrer">GitHub ↗</a>
-          {!isMobile && <button className="w-btn" onClick={ping}>Retry now</button>}
+          {/* retrying same-origin /api/status can only ever succeed on the local copy */}
+          {!isRemote && !isMobile && <button className="w-btn" onClick={ping}>Retry now</button>}
         </div>
 
         {!isMobile && (
