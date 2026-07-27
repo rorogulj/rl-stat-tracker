@@ -4,6 +4,26 @@ All notable changes to RL Stat Tracker. Versions follow `0.x` while the app is
 in active development; each release is tagged (`v0.1.0`) and picked up by
 installed copies through the in-app update button.
 
+## 0.3.9 — 2026-07-27
+
+First-round feedback from real installs.
+
+- **Replay folder is now picked in Settings** — the tracker auto-detects the
+  folder as before, but Settings → Replay folder shows what it found, lists
+  other detected candidates and accepts any pasted path (validated, applied
+  immediately, no environment variables needed). The choice persists in the
+  local config; `RL_REPLAY_DIR` still works as an override.
+- **Small-sample warning**: profiles with fewer than ~10 matches in the
+  selected mode show a notice that ratings, percentiles and the playstyle
+  read are still noisy — single games swing everything early on.
+- **Phones**: the public page now says clearly that the tracker is a Windows
+  desktop app, hides the PowerShell install command and the localhost check on
+  mobile (the check triggered a scary local-network permission prompt in iOS
+  Safari), and links "How the stats work" — the full Info article is served
+  standalone at `/info`, readable on a phone, with a way back to the landing.
+- Chrome no longer offers to "install" the website as an app (the PWA manifest
+  was misleading next to the real installer) and the demo banner is centered.
+
 ## 0.3.8 — 2026-07-26
 
 Privacy hardening (fourth independent review).
