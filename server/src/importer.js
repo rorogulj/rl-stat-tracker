@@ -8,9 +8,10 @@ const { stmts, saveAnalysis } = require('./db');
 
 const RRROCKET = path.join(__dirname, '..', '..', 'tools', 'rrrocket.exe');
 
-const { defaultReplayDir } = require('./replaydir');
+const { defaultReplayDir, saveReplayDir } = require('./replaydir');
 
-const REPLAY_DIR = defaultReplayDir();
+let REPLAY_DIR = defaultReplayDir();
+const getReplayDir = () => REPLAY_DIR;
 
 // import status (for /api/status and frontend progress)
 const progress = { running: false, total: 0, done: 0, current: null, errors: [], lastRun: null };
@@ -115,18 +116,35 @@ async function importAll() {
   }
 }
 
+let watcher = null;
+let watchCallback = null;
 function watch(onImported) {
+  if (onImported !== undefined) watchCallback = onImported;
+  if (watcher) { watcher.close().catch(() => {}); watcher = null; }
   if (!fs.existsSync(REPLAY_DIR)) return;
   const chokidar = require('chokidar');
-  const watcher = chokidar.watch(REPLAY_DIR, {
+  watcher = chokidar.watch(REPLAY_DIR, {
     ignoreInitial: true, depth: 0,
     awaitWriteFinish: { stabilityThreshold: 3000, pollInterval: 500 },
   });
   watcher.on('add', (p) => {
     if (!p.toLowerCase().endsWith('.replay')) return;
     console.log('[watch] new replay:', path.basename(p));
-    importAll().then(() => onImported && onImported());
+    importAll().then(() => watchCallback && watchCallback());
   });
+}
+
+/**
+ * Switch to a user-chosen replay folder (Settings). Persists the choice
+ * (null = back to auto-detect), re-points the watcher and imports what's there.
+ */
+function setReplayDir(dir) {
+  saveReplayDir(dir);
+  REPLAY_DIR = defaultReplayDir();
+  console.log('[importer] replay folder set to:', REPLAY_DIR);
+  watch(); // re-watch the new folder (keeps the boot-time callback)
+  importAll();
+  return REPLAY_DIR;
 }
 
 /** Compatibility with old call sites — everything goes through the priority queue. */
@@ -220,4 +238,4 @@ function resumeBenchDownload() {
   }
 }
 
-module.exports = { importAll, pendingFiles, progress, REPLAY_DIR, watch, refetchMissingRanks, refreshRanksQueue, importBenchmarks, benchProgress, BENCH_DIR, resumeBenchDownload };
+module.exports = { importAll, pendingFiles, progress, getReplayDir, setReplayDir, watch, refetchMissingRanks, refreshRanksQueue, importBenchmarks, benchProgress, BENCH_DIR, resumeBenchDownload };

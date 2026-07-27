@@ -6,7 +6,27 @@ import '@fontsource/condiment';
 import './index.css';
 import App from './App.jsx';
 import Welcome from './pages/Welcome.jsx';
+import InfoPage from './pages/InfoPage.jsx';
 import { isDemo } from './api.js';
+
+/** /info without a running server (public site, phones): the article standalone,
+ *  with a minimal bar back to the landing instead of the app chrome. */
+function InfoStandalone() {
+  return (
+    <div className="shell">
+      <header className="topbar">
+        <a href="/" className="logo">
+          <img src="/logo-icon-transparent.svg" alt="" className="logo-img" />
+          RL Stat Tracker
+        </a>
+        <a href="/" className="w-btn sm info-sa-home">← Home</a>
+      </header>
+      <main className="page">
+        <InfoPage />
+      </main>
+    </div>
+  );
+}
 
 /** Mount the app only when a local server answers; otherwise show the landing. */
 function Boot() {
@@ -29,7 +49,10 @@ function Boot() {
       </div>
     );
   }
-  if (state === 'down') return <Welcome onUp={() => setState('up')} />;
+  if (state === 'down') {
+    if (window.location.pathname === '/info') return <InfoStandalone />;
+    return <Welcome onUp={() => setState('up')} />;
+  }
   return (
     <BrowserRouter>
       <App />

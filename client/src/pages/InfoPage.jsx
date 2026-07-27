@@ -255,6 +255,13 @@ const SECTIONS = [
           corpus, with sample sizes displayed; buckets below the minimum sample threshold
           are hidden rather than shown thin.
         </p>
+        <p>
+          Sample size matters on the user's side too: averages, percentiles and the
+          playstyle read are noisy while the library is small, and single-game swings
+          dominate until roughly ten matches of a mode are in. The profile shows a
+          small-sample warning below that threshold rather than hiding anything — the
+          numbers are real, they are just not yet stable.
+        </p>
       </>
     ),
   },
@@ -319,11 +326,21 @@ const SECTIONS = [
           connections (all downloads) is documented in the repository README.
         </p>
         <p>
+          <b>Replay folder.</b> The watched folder is auto-detected (Rocket League saves
+          replays under Documents, including OneDrive-redirected setups) and can be changed
+          in Settings → Replay folder — the choice is validated, stored in the local
+          configuration and takes effect immediately, importing whatever the new folder
+          contains. The <M>RL_REPLAY_DIR</M> environment variable still works as an
+          override for scripted setups.
+        </p>
+        <p>
           <b>Welcome screen.</b> If <M>/api/status</M> does not answer — the public
           demo deployment, or the server simply not running — a landing screen appears with
           setup instructions, re-checking every five seconds and loading the app the moment
-          the server comes up. The public page also probes <M>localhost:7845</M> and
-          offers to open a running local tracker.
+          the server comes up. On request ("check for a local tracker") the public page
+          also probes <M>localhost:7845</M> and offers to open a running local tracker;
+          the check is desktop-only, and this article is served standalone
+          at <M>/info</M> so it stays readable on phones.
         </p>
         <p>
           <b>Updates.</b> The server compares its version against the repository every six

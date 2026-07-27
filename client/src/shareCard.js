@@ -15,7 +15,7 @@ import { fmtDate, fmtDur } from './api.js';
 function injectExportCss(extra = '') {
   const style = document.createElement('style');
   style.textContent = `
-    .topbar, .subnav, .share-actions { display: none !important; }
+    .topbar, .subnav, .share-actions, .warn-banner { display: none !important; }
     .reveal { opacity: 1 !important; transform: none !important; }
     *, *::before, *::after { animation: none !important; transition: none !important; box-shadow: none !important; }
     body::before, body::after { display: none !important; } /* fixed ambient gradient — html2canvas draws it OVER the content */

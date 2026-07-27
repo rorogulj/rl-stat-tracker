@@ -53,8 +53,8 @@ app.get('/api/status', (req, res) => {
   res.json({
     version: require('./update').VERSION,
     dev: require('./update').isDevCheckout,
-    replayDir: importer.REPLAY_DIR,
-    replayDirExists: fs.existsSync(importer.REPLAY_DIR),
+    replayDir: importer.getReplayDir(),
+    replayDirExists: fs.existsSync(importer.getReplayDir()),
     pending: importer.pendingFiles().length,
     progress: importer.progress,
     matches: stmts.listMatches.all().length,
@@ -132,6 +132,38 @@ app.post('/api/settings', (req, res) => {
     if (row) require('./trn').fetchPlayerRanks(me, row.name, { ttlMs: 60 * 60 * 1000 }).catch(() => {});
   }
   res.json({ ok: true });
+});
+
+// ---- replay folder (Settings picker; persisted in <data>/config.json) ----
+app.get('/api/replay-dir', (req, res) => {
+  const rd = require('./replaydir');
+  const current = importer.getReplayDir();
+  res.json({
+    current,
+    source: rd.replayDirSource(),
+    exists: fs.existsSync(current),
+    replays: rd.countReplays(current),
+    candidates: rd.detectedCandidates(),
+  });
+});
+
+app.post('/api/replay-dir', (req, res) => {
+  const rd = require('./replaydir');
+  const { dir } = req.body || {};
+  if (dir == null || dir === '') {
+    // back to auto-detection
+    const current = importer.setReplayDir(null);
+    return res.json({ ok: true, current, source: rd.replayDirSource(), replays: rd.countReplays(current) });
+  }
+  if (typeof dir !== 'string') return res.status(400).json({ error: 'dir must be a string' });
+  const clean = dir.trim().replace(/^["']|["']$/g, ''); // paths pasted from Explorer come quoted
+  let stat = null;
+  try { stat = fs.statSync(clean); } catch { /* missing */ }
+  if (!stat || !stat.isDirectory()) {
+    return res.status(400).json({ error: 'Folder not found: ' + clean });
+  }
+  const current = importer.setReplayDir(clean);
+  res.json({ ok: true, current, source: rd.replayDirSource(), replays: rd.countReplays(current) });
 });
 
 // ---- favorite players (stored in the settings table as a JSON list) ----
@@ -465,7 +497,7 @@ app.get('/api/server', (req, res) => {
     pid: process.pid,
     node: process.version,
     version: require('./update').VERSION,
-    replayDir: importer.REPLAY_DIR,
+    replayDir: importer.getReplayDir(),
     dataDir: DATA_DIR,
     db: {
       path: DB_PATH,
@@ -543,7 +575,7 @@ const srv = app.listen(PORT, '127.0.0.1', () => {
   console.log('');
   console.log('  ██████╗ ██╗      ███████╗████████╗ █████╗ ████████╗███████╗');
   console.log('  RL STAT TRACKER — http://localhost:' + PORT);
-  console.log('  Replay folder: ' + importer.REPLAY_DIR);
+  console.log('  Replay folder: ' + importer.getReplayDir());
   console.log('');
   // initial import + watcher + tracker cache top-up in the background
   importer.importAll();

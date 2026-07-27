@@ -200,10 +200,10 @@ export default function App() {
 
       {status?.replayDirExists === false && (
         <div className="warn-banner">
-          <b>Replay folder not found:</b> <code>{status.replayDir}</code> — if your Documents
-          folder lives in OneDrive or elsewhere, set the <code>RL_REPLAY_DIR</code> environment
-          variable to your replay folder. Also make sure Rocket League saves replays
-          (Settings → Replays → autosave).
+          <b>Replay folder not found:</b> <code>{status.replayDir}</code> — open{' '}
+          <button className="linklike" onClick={() => setShowSettings(true)}>Settings ⚙</button>{' '}
+          and pick the folder where Rocket League saves your replays. Also make sure
+          replay autosave is on in Rocket League (Settings → Replays).
         </div>
       )}
       {status && (status.progress?.errors?.length > 0) && !status.progress?.running && (

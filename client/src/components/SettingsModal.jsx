@@ -32,12 +32,36 @@ export default function SettingsModal({ onClose, onSaved }) {
     }
   };
 
+  // replay folder picker
+  const [rd, setRd] = useState(null);           // { current, source, exists, replays, candidates }
+  const [rdInput, setRdInput] = useState('');
+  const [rdBusy, setRdBusy] = useState(false);
+  const [rdMsg, setRdMsg] = useState(null);     // { ok, text }
+
+  const applyReplayDir = async (dir) => {
+    setRdBusy(true);
+    setRdMsg(null);
+    try {
+      const r = await api.setReplayDir(dir);
+      setRdMsg({ ok: true, text: dir == null
+        ? `Back to automatic detection — ${r.replays ?? 0} replays found.`
+        : `Folder set — ${r.replays ?? 0} replays found, importing new ones now.` });
+      setRdInput('');
+      api.replayDir().then(setRd).catch(() => {});
+      onSaved();
+    } catch (e) {
+      setRdMsg({ ok: false, text: String(e.message || e) });
+    }
+    setRdBusy(false);
+  };
+
   useEffect(() => {
     Promise.all([api.players(), api.settings()]).then(([pl, st]) => {
       setPlayers(pl.players);
       setSelected(new Set(st.myAccounts || []));
       setAutoMe(st.autoMe);
     }).catch(() => {});
+    api.replayDir().then(setRd).catch(() => {});
   }, []);
 
   const toggle = (key) => {
@@ -90,6 +114,51 @@ export default function SettingsModal({ onClose, onSaved }) {
             ))}
             {!shown.length && <div className="rank-note" style={{ padding: 10 }}>No results.</div>}
           </div>
+        </div>
+
+        <div className="modal-section" style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+          <div className="rank-cap" style={{ marginBottom: 6 }}>Replay folder</div>
+          <p className="rank-note" style={{ marginBottom: 10 }}>
+            The tracker watches this folder for new replays. Rocket League saves them
+            automatically (Settings → Replays) — usually under Documents.
+          </p>
+          {rd && (
+            <div className="rdir-current">
+              <code className="rdir-path">{rd.current}</code>
+              <span className="rank-note">
+                {rd.exists
+                  ? <>{rd.replays ?? 0} replays{rd.source === 'auto' ? ' · auto-detected' : rd.source === 'env' ? ' · from RL_REPLAY_DIR' : ''}</>
+                  : <span style={{ color: 'var(--red)' }}>folder not found</span>}
+              </span>
+            </div>
+          )}
+          {rd?.candidates?.filter((c) => c.path !== rd.current).map((c) => (
+            <button key={c.path} className="rdir-cand" disabled={rdBusy} onClick={() => applyReplayDir(c.path)}>
+              Use <code>{c.path}</code> <span className="rank-note">({c.replays} replays)</span>
+            </button>
+          ))}
+          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+            <input
+              className="search-input" style={{ flex: '1 1 260px' }}
+              placeholder="Paste a folder path, e.g. D:\Replays"
+              value={rdInput} onChange={(e) => setRdInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && rdInput.trim()) applyReplayDir(rdInput); }}
+            />
+            <button className="vc-btn" style={{ fontSize: 13 }} disabled={rdBusy || !rdInput.trim()}
+              onClick={() => applyReplayDir(rdInput)}>
+              {rdBusy ? 'Checking…' : 'Use this folder'}
+            </button>
+            {rd?.source === 'config' && (
+              <button className="vc-btn" style={{ fontSize: 13 }} disabled={rdBusy} onClick={() => applyReplayDir(null)}>
+                Reset to automatic
+              </button>
+            )}
+          </div>
+          {rdMsg && (
+            <div className="rank-note" style={{ marginTop: 8, color: rdMsg.ok ? 'var(--green)' : 'var(--red)' }}>
+              {rdMsg.text}
+            </div>
+          )}
         </div>
 
         <div className="modal-section" style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>

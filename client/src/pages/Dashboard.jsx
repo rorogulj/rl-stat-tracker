@@ -301,6 +301,14 @@ export default function Dashboard({ mode = '', playerKey = null }) {
         </p>
       )}
 
+      {p.games < 10 && (
+        <div className="warn-banner sample">
+          <b>Small sample:</b> only {p.games} {p.games === 1 ? 'match' : 'matches'} in {modeLabel} —
+          ratings, percentiles and the playstyle read are noisy until ~10 matches. Play a few more
+          (or check another mode) before trusting the numbers.
+        </div>
+      )}
+
       {/* ===== COMPACT HEADER ===== */}
       <div className="share-actions" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
         <button className="trn-refresh" disabled={exporting} onClick={async () => {

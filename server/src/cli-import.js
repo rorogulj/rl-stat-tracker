@@ -4,7 +4,7 @@ const importer = require('./importer');
 const { stmts } = require('./db');
 
 (async () => {
-  console.log('Replay folder:', importer.REPLAY_DIR);
+  console.log('Replay folder:', importer.getReplayDir());
   const pending = importer.pendingFiles();
   console.log('To import:', pending.length, 'replays');
   const t0 = Date.now();

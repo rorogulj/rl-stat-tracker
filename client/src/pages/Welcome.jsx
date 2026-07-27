@@ -31,6 +31,9 @@ const LOCAL = 'http://localhost:7845';
 // on the public (Vercel) copy of this page, "/api/status" can never answer — the
 // tracker lives on the visitor's machine, so we probe localhost too
 const isRemote = typeof window !== 'undefined' && window.location.port !== '7845';
+// phones: no install command, no localhost probe (iOS turns the probe into a
+// scary "access other devices on your network" permission prompt)
+const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPod|Mobile/i.test(navigator.userAgent);
 
 export default function Welcome({ onUp }) {
   const [tries, setTries] = useState(0);
@@ -77,10 +80,18 @@ export default function Welcome({ onUp }) {
 
         <p className="w-lead">
           This page is only the interface. The numbers come from a small server that runs
-          on <b>your</b> PC — it watches your replay folder, analyzes every match with a
-          custom stat engine and keeps everything in a local database. Nothing is uploaded
-          anywhere.
+          on <b>your Windows PC</b> — it watches your replay folder, analyzes every match
+          with a custom stat engine and keeps everything in a local database. Nothing is
+          uploaded anywhere.
         </p>
+
+        {isMobile && (
+          <div className="w-mobile-note">
+            📱 You're on a phone — the tracker itself is a <b>Windows desktop app</b>.
+            Come back on your PC to install it. Meanwhile you can read how the stats
+            work, or poke around the demo (built for desktop, so expect rough edges).
+          </div>
+        )}
 
         {localUp ? (
           <div className="w-status up">
@@ -89,12 +100,14 @@ export default function Welcome({ onUp }) {
             <a className="w-btn primary sm" href={LOCAL}>Open it ↗</a>
           </div>
         ) : isRemote ? (
-          <div className="w-status">
-            <span className="w-dot" />
-            {probed
-              ? <>No tracker found on this machine — install below, or open <code>localhost:7845</code> manually.</>
-              : <>Already installed?{' '}<button className="linklike" onClick={probeLocal}>Check for a local tracker</button></>}
-          </div>
+          !isMobile && (
+            <div className="w-status">
+              <span className="w-dot" />
+              {probed
+                ? <>No tracker found on this machine — install below, or open <code>localhost:7845</code> manually.</>
+                : <>Already installed?{' '}<button className="linklike" onClick={probeLocal}>Check for a local tracker</button></>}
+            </div>
+          )
         ) : (
           <div className="w-status">
             <span className="w-dot" />
@@ -103,36 +116,41 @@ export default function Welcome({ onUp }) {
           </div>
         )}
 
-        <div className="w-install">
-          <div className="w-install-label">
-            Install — open <b>PowerShell</b> (press Start, type "powershell", Enter) and paste:
+        {!isMobile && (
+          <div className="w-install">
+            <div className="w-install-label">
+              Install (Windows) — open <b>PowerShell</b> (press Start, type "powershell", Enter) and paste:
+            </div>
+            <div className="w-cmd">
+              <code>{INSTALL_CMD}</code>
+              <CopyBtn text={INSTALL_CMD} />
+            </div>
+            <div className="w-install-note">
+              Sets everything up in ~2 minutes, adds a desktop shortcut and opens the tracker.
+              Run it again anytime to update. <a className="w-link" href={REPO} target="_blank" rel="noreferrer">
+              Read the script</a> before running, if you like — it's open source.
+            </div>
           </div>
-          <div className="w-cmd">
-            <code>{INSTALL_CMD}</code>
-            <CopyBtn text={INSTALL_CMD} />
-          </div>
-          <div className="w-install-note">
-            Sets everything up in ~2 minutes, adds a desktop shortcut and opens the tracker.
-            Run it again anytime to update. <a className="w-link" href={REPO} target="_blank" rel="noreferrer">
-            Read the script</a> before running, if you like — it's open source.
-          </div>
-        </div>
+        )}
 
         <div className="w-cta">
           {isRemote && <button className="w-btn primary" onClick={enterDemo}>Try the demo</button>}
+          <a className="w-btn" href="/info">How the stats work</a>
           <a className={`w-btn${isRemote ? '' : ' primary'}`} href={REPO} target="_blank" rel="noreferrer">GitHub ↗</a>
-          <button className="w-btn" onClick={ping}>Retry now</button>
+          {!isMobile && <button className="w-btn" onClick={ping}>Retry now</button>}
         </div>
 
-        <details className="w-dev">
-          <summary>For developers (manual setup)</summary>
-          <div className="w-steps">
-            <div>git clone {REPO}</div>
-            <div>cd rl-stat-tracker</div>
-            <div>npm run setup</div>
-            <div>npm start&nbsp;&nbsp;<span className="w-note"># then open http://localhost:7845</span></div>
-          </div>
-        </details>
+        {!isMobile && (
+          <details className="w-dev">
+            <summary>For developers (manual setup)</summary>
+            <div className="w-steps">
+              <div>git clone {REPO}</div>
+              <div>cd rl-stat-tracker</div>
+              <div>npm run setup</div>
+              <div>npm start&nbsp;&nbsp;<span className="w-note"># then open http://localhost:7845</span></div>
+            </div>
+          </details>
+        )}
 
         <div className="w-feats">
           xG &amp; finishing · 1–99 game rating · rank estimate vs a 27k-replay benchmark ·

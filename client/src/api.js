@@ -37,6 +37,14 @@ export const api = {
   rankHistory: (mode) => j('/api/rank-history' + q({ mode })),
   benchmark: (mode) => j('/api/benchmark' + q({ mode })),
   saveSettings: (body) => j('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+  replayDir: () => j('/api/replay-dir'),
+  // surfaces the server's validation message ("Folder not found: …") instead of a bare status code
+  setReplayDir: async (dir) => {
+    const r = await fetch('/api/replay-dir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dir }) });
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(body.error || 'API ' + r.status);
+    return body;
+  },
   favorites: () => j('/api/favorites'),
   toggleFavorite: (key, name) => j('/api/favorites/toggle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, name }) }),
   triggerImport: () => j('/api/import', { method: 'POST' }),

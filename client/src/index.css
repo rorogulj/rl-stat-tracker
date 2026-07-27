@@ -783,6 +783,20 @@ table.cmp.opp-table { width: 100%; }
 .acc-name { font-weight: 600; font-size: 13.5px; flex: 1; }
 .acc-meta { color: var(--muted); font-size: 12px; white-space: nowrap; }
 
+/* replay folder picker (Settings) */
+.rdir-current {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 8px;
+}
+.rdir-path { font-size: 12px; word-break: break-all; color: var(--text); }
+.rdir-cand {
+  display: block; width: 100%; text-align: left; margin: 3px 0; padding: 7px 12px;
+  font-family: var(--font); font-size: 12px; color: var(--text);
+  background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border);
+  border-radius: var(--radius-xs); cursor: pointer; transition: all 0.14s;
+}
+.rdir-cand:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(111, 255, 0, 0.3); }
+.rdir-cand code { word-break: break-all; }
+
 /* ---------- mode filter ---------- */
 .mode-filter { display: inline-flex; gap: 2px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 3px; }
 .mf {
@@ -1304,9 +1318,23 @@ table.cmp.opp-table { width: 100%; }
 .w-btn:hover { border-color: var(--neon); }
 .w-btn.primary { background: var(--neon); border-color: var(--neon); color: #010828; font-weight: 700; }
 .w-feats { margin-top: 26px; font-size: 11.5px; line-height: 1.7; color: var(--muted); border-top: 1px solid var(--border); padding-top: 16px; }
+/* phone visitors on the public page: desktop-app notice */
+.w-mobile-note {
+  margin-top: 20px; padding: 12px 16px; font-size: 12.5px; line-height: 1.65;
+  color: var(--text); background: rgba(111, 255, 0, 0.07);
+  border: 1px solid rgba(111, 255, 0, 0.35); border-radius: var(--radius-sm);
+}
+.w-mobile-note b { color: var(--neon); }
+
+/* standalone /info (no app shell): "← Home" link in the minimal topbar */
+.info-sa-home { margin-left: auto; font-size: 12px; padding: 7px 16px; }
+
 @media (max-width: 640px) {
   .welcome-card { padding: 32px 24px; }
   .w-title { font-size: 34px; }
+  .w-cta { gap: 8px; }
+  .w-cta .w-btn { flex: 1 1 auto; text-align: center; padding: 10px 14px; }
+  .w-feats { font-size: 11px; }
 }
 
 /* welcome: one-line installer block */
@@ -1385,6 +1413,7 @@ table.cmp.opp-table { width: 100%; }
   border-radius: var(--radius-sm); font-size: 12.5px; line-height: 1.6; color: var(--text);
 }
 .warn-banner.bad { background: rgba(255, 109, 109, 0.08); border-color: rgba(255, 109, 109, 0.4); }
+.warn-banner.sample { margin: 0 0 14px; } /* inside .page (Dashboard) — already width-constrained */
 .warn-banner code { color: var(--gold, #ffd166); }
 .warn-banner a { color: var(--neon); text-decoration: underline; }
 
@@ -1448,14 +1477,21 @@ table.cmp.opp-table { width: 100%; }
 .wk-search { width: 300px; margin: 4px 0 14px; }
 .wk-gloss-entry { font-size: 12.5px; line-height: 1.75; color: var(--text-2); margin: 0 0 9px; }
 .wk-gloss-entry b { color: var(--text); }
-@media (max-width: 640px) { .wk-row { grid-template-columns: 1fr; gap: 3px; } .wk-title { font-size: 30px; } }
+@media (max-width: 640px) {
+  .wk-row { grid-template-columns: 1fr; gap: 3px; }
+  .wk-title { font-size: 30px; }
+  .wk-search { width: 100%; }
+  .wk-toc { max-width: none; }
+  .shell { padding: 0 14px 60px; } /* phones: the 40px desktop gutter eats half the screen */
+}
 
 /* demo mode banner */
 .demo-banner {
   max-width: 1320px; margin: 0 auto 10px; padding: 10px 18px;
   background: rgba(111, 255, 0, 0.07); border: 1px solid rgba(111, 255, 0, 0.35);
   border-radius: var(--radius-sm); font-size: 12.5px; color: var(--text);
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;
+  text-align: center;
 }
 .demo-banner b { color: var(--neon); letter-spacing: 0.08em; }
 
