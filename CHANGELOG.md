@@ -4,6 +4,16 @@ All notable changes to RL Stat Tracker. Versions follow `0.x` while the app is
 in active development; each release is tagged (`v0.1.0`) and picked up by
 installed copies through the in-app update button.
 
+## 0.3.11 — 2026-07-27
+
+- **Fixed "No tracker found on this machine" on the public page even when the
+  tracker was running.** Browsers gate a public-page → localhost request behind
+  a CORS preflight (Chrome's private/local-network access); the server answered
+  the `OPTIONS` request with Express's default reply and no CORS headers, so the
+  probe was always blocked. The server now answers the preflight properly for
+  the public page's origin (and only for it). If the browser shows a
+  local-network permission prompt, allow it — the landing page now says so.
+
 ## 0.3.10 — 2026-07-27
 
 - **Fixed the server becoming unresponsive with a large benchmark corpus.**

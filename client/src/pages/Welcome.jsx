@@ -104,7 +104,9 @@ export default function Welcome({ onUp }) {
             <div className="w-status">
               <span className="w-dot" />
               {probed
-                ? <>No tracker found on this machine — install below, or open <code>localhost:7845</code> manually.</>
+                ? <>No tracker found on this machine — if the browser asked about local-network
+                    access, allow it and <button className="linklike" onClick={probeLocal}>check again</button>;
+                    otherwise install below, or open <code>localhost:7845</code> manually.</>
                 : <>Already installed?{' '}<button className="linklike" onClick={probeLocal}>Check for a local tracker</button></>}
             </div>
           )

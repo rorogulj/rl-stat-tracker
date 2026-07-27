@@ -30,6 +30,18 @@ const LOG_BUF = [];
 // tracker". Cross-origin gets ONLY {up, version} — never paths, keys or errors
 // (the full status contains the Windows username in replayDir).
 const WELCOME_ORIGIN = 'https://rl-stat-tracker.vercel.app';
+// browsers gate public-page → localhost requests behind a CORS preflight
+// (Chrome PNA/LNA); Express's default OPTIONS answer carries no CORS headers,
+// so the probe was blocked and the page always claimed "no tracker found"
+app.options('/api/status', (req, res) => {
+  if (req.headers.origin === WELCOME_ORIGIN) {
+    res.setHeader('Access-Control-Allow-Origin', WELCOME_ORIGIN);
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    res.setHeader('Access-Control-Allow-Private-Network', 'true');
+    res.setHeader('Access-Control-Allow-Local-Network', 'true');
+  }
+  res.status(204).end();
+});
 app.get('/api/status', (req, res, next) => {
   if (req.headers.origin === WELCOME_ORIGIN) {
     res.setHeader('Access-Control-Allow-Origin', WELCOME_ORIGIN);
