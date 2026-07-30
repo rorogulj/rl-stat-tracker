@@ -4,6 +4,23 @@ All notable changes to RL Stat Tracker. Versions follow `0.x` while the app is
 in active development; each release is tagged (`v0.1.0`) and picked up by
 installed copies through the in-app update button.
 
+## 0.3.13 — 2026-07-30
+
+- **The top navigation bar now adapts to the window width.** It used to be a
+  single fixed row that overflowed and clipped as soon as the window got
+  narrower than ~1200px. It now tightens progressively, then splits into two
+  rows (nav links on their own scrollable row), and on phones collapses to a
+  compact icon-logo layout.
+- **Phone layout fixes (demo and installed).** The match-detail page no longer
+  stretches to ~2.5× the screen width on mobile: wide stat tables scroll inside
+  their cards, the shot map / replay / heatmap canvases scale down keeping
+  their aspect ratio, and the replay controls wrap with the scrubber on its own
+  row. Profile hero, "gap to next rank", head-to-head bars, compare rows and
+  the matches toolbar were also tuned for small screens.
+- Benchmark downloader: the list step now pages past already-downloaded replays
+  instead of only looking at the newest ones, so the phase-2 corpus download
+  makes progress again.
+
 ## 0.3.12 — 2026-07-27
 
 - **The public page no longer tries to detect a local tracker.** Even with the

@@ -471,7 +471,9 @@ body::after {
 
 .dsection { scroll-margin-top: 146px; }
 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; }
-.detail-grid .dsection { min-width: 0; }
+/* every grid item needs min-width:0 — without it the item's automatic minimum is the
+   min-content of its tables (900px+), which stretches the whole page on phones */
+.detail-grid > * { min-width: 0; }
 @media (max-width: 1360px) { .detail-grid { grid-template-columns: 1fr; } }
 
 .dsection-h {
@@ -1513,3 +1515,84 @@ table.cmp.opp-table { width: 100%; }
 .cg-num.cg-sum { color: var(--text); font-weight: 650; }
 .srv-log-details summary { font-size: 11.5px; color: var(--muted); cursor: pointer; }
 .srv-log-details summary:hover { color: var(--text); }
+
+/* ========== responsive: topbar + phones ==========
+   Kept at the END of the file so these override the base rules above
+   (media queries add no specificity — source order decides). */
+
+/* topbar gets tight before anything else: shrink nav/search first */
+@media (max-width: 1400px) {
+  .topbar { gap: 12px; }
+  .nav { gap: 2px; }
+  .nav a { padding: 8px 10px 10px; font-size: 13px; }
+  .nav a::after { left: 10px; right: 10px; }
+  .search-input { width: 130px; }
+  .search-input:focus { width: 170px; }
+}
+
+/* two rows: logo + search + controls on top, nav on its own full-width row */
+@media (max-width: 1140px) {
+  .topbar { flex-wrap: wrap; gap: 6px 12px; padding: 8px 16px 4px; }
+  .nav {
+    order: 10; flex: 1 1 100%; overflow-x: auto;
+    scrollbar-width: none; -ms-overflow-style: none;
+  }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav a { white-space: nowrap; }
+  .player-search { flex: 1 1 130px; max-width: 240px; margin-left: auto; min-width: 0; }
+  .search-input, .search-input:focus { width: 100%; }
+}
+
+/* phones */
+@media (max-width: 640px) {
+  .topbar { position: static; margin: 10px 0 18px; padding: 6px 12px 2px; gap: 4px 8px; }
+  .logo { font-size: 0; gap: 0; }        /* icon only — the text does not fit */
+  .logo-img { width: 30px; height: 30px; }
+  .player-search { flex: 1 1 90px; max-width: none; }
+  .mf { padding: 6px 9px; font-size: 11px; }
+  .sync-btn { padding: 8px 12px; font-size: 12px; }
+  .icon-btn { padding: 6px 9px; font-size: 14px; }
+  .nav { justify-content: space-between; gap: 0; }
+  .nav a { padding: 8px 8px 10px; font-size: 12.5px; }
+  .demo-banner { font-size: 11.5px; padding: 8px 12px; }
+
+  /* fixed-width canvases (shot map, replay, heatmaps) must not stretch the page —
+     scale down keeping the aspect ratio from the width/height attributes */
+  .page canvas { max-width: 100%; height: auto !important; }
+
+  .section-title { flex-wrap: wrap; row-gap: 10px; }
+  .section-title .search-input { width: 100% !important; } /* beats the inline width */
+  .match-list.grid2 { grid-template-columns: 1fr; }
+
+  /* profile hero */
+  .phero { padding: 22px 18px 16px; }
+  .phero-name { font-size: 34px; }
+  .phero-wm { font-size: 64px; }
+  .phero-stats .phv { font-size: 24px; }
+  .id-cards { gap: 8px; }
+  .session-est { min-width: 100px; padding: 10px 12px 8px; flex: 1 1 30%; }
+
+  /* opponent profile header */
+  .phead { padding: 20px 16px; gap: 20px; }
+  .phead-stats { grid-template-columns: repeat(3, 1fr); gap: 16px 14px; }
+
+  /* gap-to-next-rank: drop the current-rank and z columns, keep You / next / bar */
+  .gap-head, .gap-row { grid-template-columns: minmax(84px, 1fr) 52px 60px minmax(72px, 1fr); gap: 6px; }
+  .gap-cur, .gap-z, .gap-head span:last-child { display: none; }
+
+  /* match detail */
+  .scoreboard { padding: 18px 14px; }
+  .gt-goal .tip { display: none; }  /* hover tooltips stick out past the screen edge */
+  .viewer-controls { flex-wrap: wrap; justify-content: center; }
+  .vc-scrub { flex: 1 1 100%; min-width: 0; order: -1; }  /* scrubber gets its own row */
+  .vs-row { grid-template-columns: 34px 1fr 84px 1fr 34px; gap: 5px; }
+  .vs-label { font-size: 10.5px; }
+  .vs-val { font-size: 12.5px; }
+  .cmp th, .cmp td { padding: 6px 9px; }
+
+  /* compare */
+  .compare-wrap { padding: 18px 14px; }
+  .crow { grid-template-columns: 44px 1fr 104px 1fr 44px; gap: 6px; }
+  .clbl { font-size: 11px; }
+  .cv { font-size: 12.5px; }
+}

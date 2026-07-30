@@ -77,23 +77,35 @@ async function api(url) {
   }
 }
 
-/** Collect target ids for playlist+bucket (listing is cheap: 2/s, 500/h). */
-async function listBucket(playlist, minRank, maxRank, target) {
-  const ids = [];
-  let url = `https://ballchasing.com/api/replays?playlist=${playlist}&min-rank=${minRank}&max-rank=${maxRank}`
+/**
+ * Collect `need` NEW ids for playlist+bucket (listing is cheap: 2/s, 500/h).
+ * Ids already in the manifest (incl. under an adjacent bucket — the rank filters overlap
+ * at boundaries, so the same replay shows up in two lists) don't count toward `need`;
+ * we page past them until enough fresh ones are found or the list runs out.
+ */
+async function listBucket(playlist, minRank, maxRank, need) {
+  const base = `https://ballchasing.com/api/replays?playlist=${playlist}&min-rank=${minRank}&max-rank=${maxRank}`
     + `&replay-date-after=${encodeURIComponent(DATE_AFTER)}&count=200&sort-by=replay-date&sort-dir=desc`;
-  while (ids.length < target && url) {
+  const fresh = [];
+  const seen = new Set();
+  let url = base;
+  for (let pages = 0; fresh.length < need && url && pages < 150; pages++) {
     const res = await api(url);
     if (!res) break;
     const data = await res.json();
-    for (const r of data.list || []) {
-      if (ids.length >= target) break;
-      ids.push({ id: r.id, date: r.date, minRank: r.min_rank?.id, maxRank: r.max_rank?.id });
+    const page = data.list || [];
+    for (const r of page) {
+      if (fresh.length >= need) break;
+      if (seen.has(r.id) || manifest.downloaded[r.id] || manifest.failed[r.id]) continue;
+      seen.add(r.id);
+      fresh.push({ id: r.id, date: r.date, minRank: r.min_rank?.id, maxRank: r.max_rank?.id });
     }
-    url = data.next || null;
+    // fallback when the cursor runs out but the page was full: continue by date
+    url = data.next
+      || (page.length === 200 ? `${base}&replay-date-before=${encodeURIComponent(page[page.length - 1].date)}` : null);
     await sleep(600);
   }
-  return ids;
+  return fresh;
 }
 
 async function downloadOne(playlist, bucket, entry) {
@@ -133,8 +145,8 @@ const doneIn = (playlist, bucket) =>
       const have = doneIn(playlist, bucket);
       if (have >= target) { log(`${playlist}/${bucket}: done (${have})`); continue; }
       log(`${playlist}/${bucket}: have ${have}, fetching list…`);
-      const entries = await listBucket(playlist, minRank, maxRank, target + 30);
-      log(`${playlist}/${bucket}: listed ${entries.length} replays`);
+      const entries = await listBucket(playlist, minRank, maxRank, target - have + 20);
+      log(`${playlist}/${bucket}: listed ${entries.length} new replays`);
       for (const e of entries) {
         if (doneIn(playlist, bucket) >= target) break;
         const r = await downloadOne(playlist, bucket, e);
