@@ -326,6 +326,14 @@ const SECTIONS = [
           connections (all downloads) is documented in the repository README.
         </p>
         <p>
+          <b>Player identity.</b> Players are keyed by the account id stored in the replay
+          (Epic id, Steam id, or the PSN identity blob), so name changes do not split a
+          player's history. Split-screen is the one exception: the guest ("name(1)")
+          carries the <i>host's</i> account id in the replay, so the tracker derives a
+          separate key for it from the "(N)" name suffix — the guest shows up as its own
+          player and the host's profile stays clean.
+        </p>
+        <p>
           <b>Replay folder.</b> The watched folder is auto-detected (Rocket League saves
           replays under Documents, including OneDrive-redirected setups) and can be changed
           in Settings → Replay folder — the choice is validated, stored in the local

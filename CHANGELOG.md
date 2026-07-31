@@ -4,6 +4,17 @@ All notable changes to RL Stat Tracker. Versions follow `0.x` while the app is
 in active development; each release is tagged (`v0.1.0`) and picked up by
 installed copies through the in-app update button.
 
+## 0.3.14 — 2026-07-31
+
+- **Fixed split-screen matches merging both local players into one.** The
+  split-screen guest ("name(1)") carries the host's account id in the replay,
+  so both players got the same key and their stats collapsed into a single row
+  — matches showed 3 players in a 2v2 and the host's stats were mixed with the
+  guest's. The guest now gets its own key (derived from the "(N)" name suffix)
+  and appears as a separate player. The analyzer version bump re-imports the
+  whole library on first start after the update, so old split-screen matches
+  are fixed too (benchmark corpus re-imports in the background).
+
 ## 0.3.13 — 2026-07-30
 
 - **The top navigation bar now adapts to the window width.** It used to be a

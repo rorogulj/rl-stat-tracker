@@ -16,7 +16,7 @@ const HEIGHT = { GROUND: 120, HIGH_AIR: 840 };
 const TOUCH = { DV: 500, RADIUS: 360, COOLDOWN: 0.35 };
 const GOAL = { HALF_W: 893, HEIGHT: 642, Y: 5120, GRAVITY: 650 };
 const CHALLENGE_WINDOW = 1.5; // s — quick alternating touches = 50/50 duel
-const ANALYZER_VERSION = 17;
+const ANALYZER_VERSION = 18; // 18: split-screen guests get their own player key (uid#N)
 
 // the six 100-boost pad locations (standard soccar maps)
 const BIG_PADS = [[3072, 4096], [-3072, 4096], [3072, -4096], [-3072, -4096], [3584, 0], [-3584, 0]];
@@ -182,16 +182,45 @@ function analyze(data, fileName) {
     loser.stats.possession.fiftiesLost++;
   };
 
+  // split-screen: the guest ("name(1)") carries the HOST's account id in the replay,
+  // so two PRIs share one uid. The first PRI to claim a uid keeps the bare key; a
+  // different PRI with the same uid gets "#N" (from the "(N)" name suffix) so the two
+  // local players stay separate instead of merging into one row.
+  const uidOwner = new Map(); // uid -> priId that owns the bare key
+  const keyOfPri = (priId, pri) => {
+    if (!pri.uid) return pri.name || null;
+    const owner = uidOwner.get(pri.uid);
+    if (owner == null || owner === priId) {
+      uidOwner.set(pri.uid, priId);
+      return pri.uid;
+    }
+    const mMine = /\((\d+)\)$/.exec(pri.name || '');
+    const mOwner = /\((\d+)\)$/.exec(priActors.get(owner)?.name || '');
+    if (!mMine && mOwner) {
+      // the guest claimed the bare uid first — the host takes it over, the guest moves to "#N"
+      const guestKey = `${pri.uid}#${mOwner[1]}`;
+      const entry = players.get(pri.uid);
+      if (entry && !players.has(guestKey)) {
+        players.delete(pri.uid);
+        entry.key = guestKey;
+        players.set(guestKey, entry);
+      }
+      uidOwner.set(pri.uid, priId);
+      return pri.uid;
+    }
+    return `${pri.uid}#${mMine ? mMine[1] : 'g'}`;
+  };
+
   const playerKeyOfPri = (priId) => {
     const pri = priActors.get(priId);
     if (!pri) return null;
-    return pri.uid || pri.name || null;
+    return keyOfPri(priId, pri);
   };
 
   const ensurePlayer = (priId) => {
     const pri = priActors.get(priId);
     if (!pri || !pri.name) return null;
-    const key = pri.uid || pri.name;
+    const key = keyOfPri(priId, pri);
     if (!players.has(key)) {
       // migration: record created under the name before the UniqueId arrived
       if (pri.uid && players.has(pri.name)) {
