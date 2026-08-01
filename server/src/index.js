@@ -25,6 +25,18 @@ const LOG_BUF = [];
   };
 }
 
+// ---------- crash forensics ----------
+// The launcher captures stdout/stderr into a log and restarts on a non-zero exit,
+// so a crash must say WHAT died before the process goes down. Unhandled rejections
+// only log — an aborted background fetch must not take the server with it.
+process.on('uncaughtException', (e) => {
+  console.error(`[crash] ${new Date().toISOString()} uncaughtException:`, e && e.stack || e);
+  process.exit(1);
+});
+process.on('unhandledRejection', (e) => {
+  console.error(`[warn] ${new Date().toISOString()} unhandledRejection:`, e && e.stack || e);
+});
+
 // ---------- API ----------
 // the public welcome page (Vercel) pings the LOCAL server to offer "open your
 // tracker". Cross-origin gets ONLY {up, version} — never paths, keys or errors

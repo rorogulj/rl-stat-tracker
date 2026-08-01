@@ -4,6 +4,16 @@ All notable changes to RL Stat Tracker. Versions follow `0.x` while the app is
 in active development; each release is tagged (`v0.1.0`) and picked up by
 installed copies through the in-app update button.
 
+## 0.3.16 — 2026-08-01
+
+- **The server now restarts itself if it crashes.** The launcher supervises the
+  process: a crash restarts it within seconds (with a crash-loop guard), a clean
+  exit — second copy or self-update — does not. Server output now lands in a log
+  (`server\run.log` in the dev checkout, `data\server.log` on installed copies,
+  rotated at 5 MB), and uncaught errors are logged before the process dies, so
+  a future crash is diagnosable instead of silent. Installed copies pick the new
+  launcher up on their next update.
+
 ## 0.3.15 — 2026-08-01
 
 - Benchmark downloader: buckets that exhaust the 2026 replay pool (SSL duels,

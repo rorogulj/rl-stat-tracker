@@ -153,19 +153,39 @@ Pop-Location
 # ---------- 5. launcher + shortcuts ----------
 $serverDir = (Join-Path $AppDir 'server') -replace '"', ''
 @"
-' RL Stat Tracker launcher - starts the server hidden; with the "open" argument
-' it also opens the tracker in the default browser. Safe to double-click while
-' the server is already running (the second copy exits quietly).
-Dim sh, env
+' RL Stat Tracker launcher - starts the server hidden and supervises it:
+' output goes to the data dir's server.log, a crash (non-zero exit) restarts the
+' server, a clean exit (second copy already running / self-update shutdown) ends
+' the loop. With the "open" argument the server opens the tracker in the browser.
+Dim sh, fso, env, logFile, args, rc, fastFails, t0, dt
 Set sh = CreateObject("WScript.Shell")
+Set fso = CreateObject("Scripting.FileSystemObject")
 Set env = sh.Environment("PROCESS")
 env("RL_DATA_DIR") = "$DataDir"
 sh.CurrentDirectory = "$serverDir"
-sh.Run """$NodeExe"" src\index.js", 0, False
-If WScript.Arguments.Count > 0 Then
-  WScript.Sleep 1500
-  sh.Run "http://localhost:$Port"
-End If
+logFile = "$DataDir\server.log"
+args = ""
+If WScript.Arguments.Count > 0 Then args = " --open"
+fastFails = 0
+Do
+  On Error Resume Next
+  If fso.FileExists(logFile) Then
+    If fso.GetFile(logFile).Size > 5000000 Then fso.DeleteFile logFile
+  End If
+  On Error Goto 0
+  t0 = Timer
+  rc = sh.Run("cmd /s /c """"$NodeExe"" src\index.js" & args & " >> """ & logFile & """ 2>&1""", 0, True)
+  args = ""
+  If rc = 0 Then Exit Do
+  dt = Timer - t0
+  If dt >= 0 And dt < 60 Then
+    fastFails = fastFails + 1
+    If fastFails >= 10 Then Exit Do
+  Else
+    fastFails = 0
+  End If
+  WScript.Sleep 5000
+Loop
 "@ | Out-File -Encoding unicode $Launcher # UTF-16: paths may contain non-ASCII user names (č, š, é...)
 
 $wsh = New-Object -ComObject WScript.Shell
