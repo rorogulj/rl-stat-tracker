@@ -16,6 +16,9 @@ const MANIFEST = path.join(OUT_DIR, 'manifest.json');
 const KEY_FILE = path.join(ROOT, 'server', 'data', 'ballchasing.key');
 
 const DATE_AFTER = '2026-01-01T00:00:00Z'; // only fresh replays (current meta)
+// starved buckets (ssl duels, bronze/silver standard…) run out of the 2026 window —
+// when a list is drained we reach back into 2025 rather than sit at 10% of target
+const DATE_AFTER_FALLBACK = '2025-01-01T00:00:00Z';
 const FILE_DELAY_MS = 18500; // 200/h limit → 1 file / 18.5 s
 
 // download order; per-bucket target scaled by players per match.
@@ -83,12 +86,13 @@ async function api(url) {
  * at boundaries, so the same replay shows up in two lists) don't count toward `need`;
  * we page past them until enough fresh ones are found or the list runs out.
  */
-async function listBucket(playlist, minRank, maxRank, need) {
+async function listBucket(playlist, minRank, maxRank, need, dateAfter = DATE_AFTER, dateBefore = null) {
   const base = `https://ballchasing.com/api/replays?playlist=${playlist}&min-rank=${minRank}&max-rank=${maxRank}`
-    + `&replay-date-after=${encodeURIComponent(DATE_AFTER)}&count=200&sort-by=replay-date&sort-dir=desc`;
+    + `&replay-date-after=${encodeURIComponent(dateAfter)}&count=200&sort-by=replay-date&sort-dir=desc`;
+  const mk = (before) => base + (before ? `&replay-date-before=${encodeURIComponent(before)}` : '');
   const fresh = [];
   const seen = new Set();
-  let url = base;
+  let url = mk(dateBefore);
   for (let pages = 0; fresh.length < need && url && pages < 150; pages++) {
     const res = await api(url);
     if (!res) break;
@@ -102,7 +106,7 @@ async function listBucket(playlist, minRank, maxRank, need) {
     }
     // fallback when the cursor runs out but the page was full: continue by date
     url = data.next
-      || (page.length === 200 ? `${base}&replay-date-before=${encodeURIComponent(page[page.length - 1].date)}` : null);
+      || (page.length === 200 ? mk(page[page.length - 1].date) : null);
     await sleep(600);
   }
   return fresh;
@@ -137,7 +141,8 @@ const doneIn = (playlist, bucket) =>
   log('=== ballchasing benchmark download ===');
   for (const j of JOBS) log('  plan:', j.playlist, '×', j.target, 'per bucket ×', BUCKETS.length, 'buckets');
   const totalDone = () => Object.keys(manifest.downloaded).length;
-  log('already downloaded (resume):', totalDone());
+  const startTotal = totalDone();
+  log('already downloaded (resume):', startTotal);
 
   for (const { playlist, target } of JOBS) {
     log(`--- playlist ${playlist} (target ${target}/bucket) ---`);
@@ -145,8 +150,16 @@ const doneIn = (playlist, bucket) =>
       const have = doneIn(playlist, bucket);
       if (have >= target) { log(`${playlist}/${bucket}: done (${have})`); continue; }
       log(`${playlist}/${bucket}: have ${have}, fetching list…`);
-      const entries = await listBucket(playlist, minRank, maxRank, target - have + 20);
-      log(`${playlist}/${bucket}: listed ${entries.length} new replays`);
+      const need = target - have + 20;
+      const entries = await listBucket(playlist, minRank, maxRank, need);
+      if (entries.length < need) {
+        // 2026 window drained — reach back into 2025 for the remainder
+        const older = await listBucket(playlist, minRank, maxRank, need - entries.length, DATE_AFTER_FALLBACK, DATE_AFTER);
+        if (older.length) entries.push(...older);
+        log(`${playlist}/${bucket}: listed ${entries.length} new replays (${older.length} from the 2025 window)`);
+      } else {
+        log(`${playlist}/${bucket}: listed ${entries.length} new replays`);
+      }
       for (const e of entries) {
         if (doneIn(playlist, bucket) >= target) break;
         const r = await downloadOne(playlist, bucket, e);
@@ -162,5 +175,9 @@ const doneIn = (playlist, bucket) =>
       log(`${playlist}/${bucket}: finished with ${doneIn(playlist, bucket)}`);
     }
   }
+  // state for the server's auto-resume: a run that added nothing means the lists
+  // are drained — the resume backs off to a daily retry instead of hourly
+  fs.writeFileSync(path.join(OUT_DIR, 'download-state.json'),
+    JSON.stringify({ finishedAt: new Date().toISOString(), added: totalDone() - startTotal }));
   log('=== DONE — total:', totalDone(), 'replays in', OUT_DIR, '===');
 })();

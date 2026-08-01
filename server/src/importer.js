@@ -222,6 +222,12 @@ function resumeBenchDownload() {
     }
     const unmet = BENCH_TARGETS.some((j) => (per[j.playlist] || 0) < j.target * 8);
     if (!unmet) return;
+    // a finished run that added nothing = the lists are drained (starved buckets can
+    // never reach target) — retry daily for new uploads instead of churning hourly
+    try {
+      const st = JSON.parse(fs.readFileSync(path.join(BENCH_DIR, 'download-state.json'), 'utf8'));
+      if (st.added === 0 && Date.now() - Date.parse(st.finishedAt) < 24 * 60 * 60 * 1000) return;
+    } catch { /* no state file yet */ }
     const logPath = path.join(BENCH_DIR, 'download.log');
     const logStat = fs.existsSync(logPath) ? fs.statSync(logPath) : null;
     const manStat = fs.statSync(manifestPath);

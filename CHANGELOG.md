@@ -4,6 +4,13 @@ All notable changes to RL Stat Tracker. Versions follow `0.x` while the app is
 in active development; each release is tagged (`v0.1.0`) and picked up by
 installed copies through the in-app update button.
 
+## 0.3.15 — 2026-08-01
+
+- Benchmark downloader: buckets that exhaust the 2026 replay pool (SSL duels,
+  bronze/silver standard…) now fall back to a 2025 window instead of idling at
+  a fraction of their target, and a finished run that found nothing new backs
+  the auto-resume off to a daily retry instead of restarting every hour.
+
 ## 0.3.14 — 2026-07-31
 
 - **Fixed split-screen matches merging both local players into one.** The
